@@ -117,6 +117,43 @@
       color: var(--muted);
     }
     .badge-accent { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+    .download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.55rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--accent);
+      background: var(--accent-dim);
+      color: var(--accent);
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.15s, color 0.15s;
+    }
+    .download-btn:hover {
+      background: var(--accent);
+      color: #fff;
+      text-decoration: none;
+    }
+    .download-btn svg { width: 1rem; height: 1rem; fill: currentColor; flex-shrink: 0; }
+    .sidebar-download {
+      margin: 0 0.75rem 1rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+    .sidebar-download .download-btn {
+      width: 100%;
+      justify-content: center;
+      box-sizing: border-box;
+    }
 
     section { margin-bottom: 3rem; scroll-margin-top: 1.5rem; }
     section h2 {
@@ -285,6 +322,12 @@
         <a class="nav-link" href="#security">Security</a>
         <a class="nav-link" href="#links">More docs</a>
       </div>
+      <div class="sidebar-download">
+        <a class="download-btn" href="Windows-Patch-Automation-Guide.pdf" download title="Download full guide as PDF">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Download PDF
+        </a>
+      </div>
     </nav>
 
     <main class="main">
@@ -303,6 +346,12 @@
           <span class="badge">PowerCLI + PowerShell 7</span>
           <span class="badge">JSONL audit logs</span>
           <span class="badge">Sep 15, 2026 · v1.2</span>
+        </div>
+        <div class="hero-actions">
+          <a class="download-btn" href="Windows-Patch-Automation-Guide.pdf" download title="Download full website content as PDF">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Download guide (PDF)
+          </a>
         </div>
       </header>
 
@@ -787,6 +836,7 @@ gh run watch --repo Kiruthika-syk/Windows-Patch-Automation-Framework</code></pre
       <section id="links">
         <h2>More documentation</h2>
         <ul>
+          <li><a href="Windows-Patch-Automation-Guide.pdf" download>Windows-Patch-Automation-Guide.pdf</a> — Full website content as PDF (includes live VM inventory snapshot)</li>
           <li><a href="Process-Flow-and-Mechanism.md">Process-Flow-and-Mechanism.md</a> — Markdown source (same content)</li>
           <li><a href="Windows-Patch-Automation-Manual.md">Windows-Patch-Automation-Manual.md</a> — Full operations manual</li>
           <li><a href="../TROUBLESHOOTING.md">TROUBLESHOOTING.md</a> — Error diagnosis</li>
@@ -797,6 +847,7 @@ gh run watch --repo Kiruthika-syk/Windows-Patch-Automation-Framework</code></pre
 
       <footer class="footer">
         Windows Patch Automation Framework · <span id="footer-updated">Updated —</span> ·
+        <a href="Windows-Patch-Automation-Guide.pdf" download>Download PDF</a> ·
         Open at <code>http://10.90.105.221:8080/</code> (HTTP, not HTTPS)
       </footer>
     </main>

@@ -7,7 +7,8 @@ Repairs the native Windows Update Agent inside a guest VM.
 param(
     [Parameter(Mandatory)][string]$ResultPath,
     [Parameter(Mandatory)][string]$LogPath,
-    [switch]$DeepRepair
+    [switch]$DeepRepair,
+    [switch]$ForceDeepRepair
 )
 
 Set-StrictMode -Version Latest
@@ -95,24 +96,21 @@ function Invoke-ExternalCommand {
     )
 
     Write-RepairLog -Level Information -Stage $Stage -Message "Running $FilePath $($ArgumentList -join ' ')."
-    $argumentString = ($ArgumentList | ForEach-Object {
-        if ($_ -match '\s') { "`"$($_ -replace '"', '\"')`"" } else { $_ }
-    }) -join ' '
-    $commandLine = if ([string]::IsNullOrWhiteSpace($argumentString)) { $FilePath } else { "$FilePath $argumentString" }
-    $processClass = [wmiclass]'Win32_Process'
-    $createResult = $processClass.Create($commandLine)
-    if ($createResult.ReturnValue -ne 0) {
-        throw "Win32_Process.Create failed for '$FilePath' with return code $($createResult.ReturnValue)."
+    try {
+        $process = Start-Process -FilePath $FilePath -ArgumentList $ArgumentList -Wait -PassThru -NoNewWindow -ErrorAction Stop
+        $exitCode = [int]$process.ExitCode
     }
-    $processId = [int]$createResult.ProcessId
-    $process = Get-Process -Id $processId -ErrorAction Stop
-    $process.WaitForExit()
-    $exitCode = $process.ExitCode
-    Write-RepairLog -Level Information -Stage $Stage -Message "Command completed." -Data @{
+    catch {
+        if ($_.Exception.Message -match '800703FA|marked for deletion') {
+            throw [System.InvalidOperationException]::new('ServicingRebootRequired')
+        }
+        throw
+    }
+    Write-RepairLog -Level Information -Stage $Stage -Message 'Command completed.' -Data @{
         exitCode = $exitCode
-        processId = $processId
+        processId = $process.Id
     }
-    return [int]$exitCode
+    return $exitCode
 }
 
 $result = [ordered]@{
@@ -134,7 +132,12 @@ $result = [ordered]@{
 try {
     Write-RepairLog -Level Information -Stage Initialize -Message 'Starting Windows Update Agent repair.'
 
-    if (Test-WindowsUpdateComAvailable) {
+    if ($ForceDeepRepair) {
+        $DeepRepair = $true
+        Write-RepairLog -Level Warning -Stage DeepRepair -Message 'Forced deep repair requested; running DISM/SFC even if quick COM check passes.'
+    }
+
+    if (-not $DeepRepair -and (Test-WindowsUpdateComAvailable)) {
         $result.basicRepairApplied = $false
         $result.comAvailable = $true
         $result.status = 'Ready'
@@ -142,38 +145,40 @@ try {
         return
     }
 
-    Write-RepairLog -Level Warning -Stage Remediation -Message 'Windows Update COM unavailable; applying basic service and cache repair.'
-    Set-WindowsUpdateServiceState -Action Stop
-    Start-Sleep -Seconds 5
+    if (-not (Test-WindowsUpdateComAvailable)) {
+        Write-RepairLog -Level Warning -Stage Remediation -Message 'Windows Update COM unavailable; applying basic service and cache repair.'
+        Set-WindowsUpdateServiceState -Action Stop
+        Start-Sleep -Seconds 5
 
-    $distributionPath = Join-Path $env:SystemRoot 'SoftwareDistribution'
-    if (Test-Path -LiteralPath $distributionPath) {
-        $backupName = "SoftwareDistribution.old-$([DateTime]::UtcNow.ToString('yyyyMMddHHmmss'))"
-        try {
-            Rename-Item -LiteralPath $distributionPath -NewName $backupName -ErrorAction Stop
-            Write-RepairLog -Level Information -Stage Remediation -Message 'Renamed SoftwareDistribution cache.' -Data @{
-                backupName = $backupName
+        $distributionPath = Join-Path $env:SystemRoot 'SoftwareDistribution'
+        if (Test-Path -LiteralPath $distributionPath) {
+            $backupName = "SoftwareDistribution.old-$([DateTime]::UtcNow.ToString('yyyyMMddHHmmss'))"
+            try {
+                Rename-Item -LiteralPath $distributionPath -NewName $backupName -ErrorAction Stop
+                Write-RepairLog -Level Information -Stage Remediation -Message 'Renamed SoftwareDistribution cache.' -Data @{
+                    backupName = $backupName
+                }
+            }
+            catch {
+                Write-RepairLog -Level Warning -Stage Remediation -Message 'Could not rename SoftwareDistribution; attempting delete.' -Data @{
+                    error = $_.Exception.Message
+                }
+                Remove-Item -LiteralPath $distributionPath -Recurse -Force -ErrorAction SilentlyContinue
             }
         }
-        catch {
-            Write-RepairLog -Level Warning -Stage Remediation -Message 'Could not rename SoftwareDistribution; attempting delete.' -Data @{
-                error = $_.Exception.Message
-            }
-            Remove-Item -LiteralPath $distributionPath -Recurse -Force -ErrorAction SilentlyContinue
+
+        Set-WindowsUpdateServiceState -Action Start
+        Start-Sleep -Seconds 15
+        [System.GC]::Collect()
+        [System.GC]::WaitForPendingFinalizers()
+        $result.basicRepairApplied = $true
+
+        if (Test-WindowsUpdateComAvailable) {
+            $result.comAvailable = $true
+            $result.status = 'Ready'
+            Write-RepairLog -Level Information -Stage Verify -Message 'Windows Update COM recovered after basic repair.'
+            return
         }
-    }
-
-    Set-WindowsUpdateServiceState -Action Start
-    Start-Sleep -Seconds 15
-    [System.GC]::Collect()
-    [System.GC]::WaitForPendingFinalizers()
-    $result.basicRepairApplied = $true
-
-    if (Test-WindowsUpdateComAvailable) {
-        $result.comAvailable = $true
-        $result.status = 'Ready'
-        Write-RepairLog -Level Information -Stage Verify -Message 'Windows Update COM recovered after basic repair.'
-        return
     }
 
     if (-not $DeepRepair) {
@@ -185,10 +190,21 @@ try {
 
     Write-RepairLog -Level Warning -Stage DeepRepair -Message 'Starting DISM and SFC deep repair.'
     $result.deepRepairApplied = $true
-    $result.dismExitCode = Invoke-ExternalCommand -FilePath "$env:SystemRoot\System32\Dism.exe" `
-        -ArgumentList @('/Online', '/Cleanup-Image', '/RestoreHealth') -Stage 'DeepRepair'
-    $result.sfcExitCode = Invoke-ExternalCommand -FilePath "$env:SystemRoot\System32\sfc.exe" `
-        -ArgumentList @('/scannow') -Stage 'DeepRepair'
+    try {
+        $result.dismExitCode = Invoke-ExternalCommand -FilePath "$env:SystemRoot\System32\Dism.exe" `
+            -ArgumentList @('/Online', '/Cleanup-Image', '/RestoreHealth') -Stage 'DeepRepair'
+        $result.sfcExitCode = Invoke-ExternalCommand -FilePath "$env:SystemRoot\System32\sfc.exe" `
+            -ArgumentList @('/scannow') -Stage 'DeepRepair'
+    }
+    catch {
+        if ($_.Exception.Message -eq 'ServicingRebootRequired' -or $_.Exception.Message -match '800703FA|marked for deletion') {
+            $result.rebootRequired = $true
+            $result.status = 'RebootRequired'
+            Write-RepairLog -Level Warning -Stage DeepRepair -Message 'Servicing registry requires reboot before DISM/SFC can run.'
+            return
+        }
+        throw
+    }
 
     Set-WindowsUpdateServiceState -Action Stop
     Start-Sleep -Seconds 5

@@ -170,14 +170,26 @@ function Invoke-GuestPowerShell {
     param(
         [Parameter(Mandatory)]$VM,
         [Parameter(Mandatory)][pscredential]$GuestCredential,
-        [Parameter(Mandatory)][string]$ScriptText
+        [Parameter(Mandatory)][string]$ScriptText,
+        [switch]$RunAsync
     )
 
-    $result = Invoke-VMScript -VM $VM -GuestCredential $GuestCredential -ScriptType PowerShell `
-        -ScriptText $ScriptText -ErrorAction Stop
-    if ($result.ExitCode -ne 0) {
+    $invokeParams = @{
+        VM = $VM
+        GuestCredential = $GuestCredential
+        ScriptType = 'PowerShell'
+        ScriptText = $ScriptText
+        ErrorAction = 'Stop'
+    }
+    if ($RunAsync) {
+        $invokeParams.RunAsync = $true
+    }
+
+    $result = Invoke-VMScript @invokeParams
+    if (-not $RunAsync -and $result.ExitCode -ne 0) {
         throw "Guest operation exited with code $($result.ExitCode): $($result.ScriptOutput)"
     }
+    if ($RunAsync) { return $result }
     $result.ScriptOutput
 }
 
@@ -222,21 +234,25 @@ function Test-GuestWindowsUpdateComAvailable {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]$VM,
-        [Parameter(Mandatory)][pscredential]$GuestCredential
+        [Parameter(Mandatory)][pscredential]$GuestCredential,
+        [string]$SearchCriteria = 'IsInstalled=0 and IsHidden=0'
     )
 
     try {
-        $output = Invoke-GuestPowerShell -VM $VM -GuestCredential $GuestCredential -ScriptText @'
+        $escapedCriteria = $SearchCriteria.Replace("'", "''")
+        $output = Invoke-GuestPowerShell -VM $VM -GuestCredential $GuestCredential -ScriptText @"
 try {
-    $session = New-Object -ComObject Microsoft.Update.Session
-    $session.ClientApplicationID = 'Enterprise Windows Patch Automation Framework'
-    $null = New-Object -ComObject Microsoft.Update.SystemInfo
+    `$session = New-Object -ComObject Microsoft.Update.Session
+    `$session.ClientApplicationID = 'Enterprise Windows Patch Automation Framework'
+    `$null = New-Object -ComObject Microsoft.Update.SystemInfo
+    `$searcher = `$session.CreateUpdateSearcher()
+    `$null = `$searcher.Search('$escapedCriteria').Updates
     Write-Output 'OK'
 }
 catch {
     Write-Output 'FAIL'
 }
-'@
+"@
         return ($output.Trim() -eq 'OK')
     }
     catch {
@@ -360,6 +376,37 @@ function Start-GuestPatchCycle {
     }
 }
 
+function Invoke-GuestPatchCycleSync {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]$VM,
+        [Parameter(Mandatory)][pscredential]$GuestCredential,
+        [Parameter(Mandatory)][string]$GuestScriptPath,
+        [Parameter(Mandatory)][string]$GuestWorkingDirectory,
+        [Parameter(Mandatory)][string]$SearchCriteria,
+        [ValidateRange(1, 100)][int]$Cycle
+    )
+
+    $guestRoot = $GuestWorkingDirectory.TrimEnd('\', '/')
+    $jobId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
+    $resultPath = "$guestRoot\cycle-$Cycle-$jobId-result.json"
+    $logPath = "$guestRoot\cycle-$Cycle-$jobId-log.jsonl"
+    $escapedScript = $GuestScriptPath.Replace("'", "''")
+    $escapedResult = $resultPath.Replace("'", "''")
+    $escapedLog = $logPath.Replace("'", "''")
+    $escapedCriteria = $SearchCriteria.Replace("'", "''")
+    $patchCommand = "& '$escapedScript' -Cycle $Cycle -ResultPath '$escapedResult' -LogPath '$escapedLog' -SearchCriteria '$escapedCriteria'"
+
+    Invoke-GuestPowerShell -VM $VM -GuestCredential $GuestCredential -ScriptText $patchCommand | Out-Null
+
+    [pscustomobject]@{
+        ProcessId = 0
+        ResultPath = $resultPath
+        LogPath = $logPath
+        PidPath = $null
+    }
+}
+
 function Repair-PatchVCenterSession {
     [CmdletBinding()]
     param(
@@ -437,7 +484,8 @@ function Start-GuestRepairJob {
         [Parameter(Mandatory)][pscredential]$GuestCredential,
         [Parameter(Mandatory)][string]$GuestScriptPath,
         [Parameter(Mandatory)][string]$GuestWorkingDirectory,
-        [switch]$DeepRepair
+        [switch]$DeepRepair,
+        [switch]$ForceDeepRepair
     )
 
     $guestRoot = $GuestWorkingDirectory.TrimEnd('\', '/')
@@ -449,7 +497,7 @@ function Start-GuestRepairJob {
     $escapedResult = $resultPath.Replace("'", "''")
     $escapedLog = $logPath.Replace("'", "''")
     $escapedPid = $pidPath.Replace("'", "''")
-    $deepRepairFlag = if ($DeepRepair) { '-DeepRepair' } else { '' }
+    $deepRepairFlag = if ($DeepRepair -or $ForceDeepRepair) { '-DeepRepair' } else { '' }
     $repairCommand = "& '$escapedScript' -ResultPath '$escapedResult' -LogPath '$escapedLog' $deepRepairFlag"
     $encodedCommand = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($repairCommand))
 
@@ -544,7 +592,8 @@ function Invoke-GuestWindowsUpdateRepairSync {
         [Parameter(Mandatory)][string]$GuestScriptPath,
         [Parameter(Mandatory)][string]$GuestWorkingDirectory,
         [Parameter(Mandatory)][string]$LocalDirectory,
-        [switch]$DeepRepair
+        [switch]$DeepRepair,
+        [switch]$ForceDeepRepair
     )
 
     $guestRoot = $GuestWorkingDirectory.TrimEnd('\', '/')
@@ -554,7 +603,7 @@ function Invoke-GuestWindowsUpdateRepairSync {
     $escapedScript = $GuestScriptPath.Replace("'", "''")
     $escapedResult = $resultPath.Replace("'", "''")
     $escapedLog = $logPath.Replace("'", "''")
-    $deepRepairFlag = if ($DeepRepair) { '-DeepRepair' } else { '' }
+    $deepRepairFlag = if ($DeepRepair -or $ForceDeepRepair) { '-DeepRepair' } else { '' }
 
     Invoke-GuestPowerShell -VM $VM -GuestCredential $GuestCredential -ScriptText @"
 & '$escapedScript' -ResultPath '$escapedResult' -LogPath '$escapedLog' $deepRepairFlag
@@ -584,35 +633,41 @@ function Invoke-GuestWindowsUpdateRepair {
         [ValidateRange(30, 3600)][int]$WebOperationTimeoutSeconds = 300,
         [ValidateRange(60, 28800)][int]$TimeoutSeconds = 7200,
         [ValidateRange(5, 300)][int]$PollSeconds = 20,
-        [switch]$DeepRepair
+        [switch]$DeepRepair,
+        [switch]$ForceDeepRepair
     )
 
-    if (-not $DeepRepair) {
-        try {
-            return Invoke-GuestWindowsUpdateRepairSync -VM $VM -GuestCredential $GuestCredential `
-                -GuestScriptPath $GuestScriptPath -GuestWorkingDirectory $GuestWorkingDirectory `
-                -LocalDirectory $LocalDirectory -DeepRepair:$DeepRepair
-        }
-        catch {
-            # Fall back to detached worker for environments where sync repair fails.
-        }
-    }
+    $useDeepRepair = [bool]$DeepRepair -or [bool]$ForceDeepRepair
 
-    try {
+    if ($useDeepRepair) {
         $repairHandle = Start-GuestRepairJob -VM $VM -GuestCredential $GuestCredential `
-            -GuestScriptPath $GuestScriptPath -GuestWorkingDirectory $GuestWorkingDirectory -DeepRepair:$DeepRepair
+            -GuestScriptPath $GuestScriptPath -GuestWorkingDirectory $GuestWorkingDirectory `
+            -DeepRepair -ForceDeepRepair:$ForceDeepRepair
         Wait-GuestRepairJob -VM $VM -GuestCredential $GuestCredential -RepairHandle $repairHandle `
             -Server $Server -VCenterCredential $VCenterCredential -IgnoreInvalidCertificate $IgnoreInvalidCertificate `
             -WebOperationTimeoutSeconds $WebOperationTimeoutSeconds -TimeoutSeconds $TimeoutSeconds `
             -PollSeconds $PollSeconds
-        Copy-GuestRepairArtifacts -VM $VM -GuestCredential $GuestCredential -RepairHandle $repairHandle `
+        return Copy-GuestRepairArtifacts -VM $VM -GuestCredential $GuestCredential -RepairHandle $repairHandle `
+            -LocalDirectory $LocalDirectory
+    }
+
+    try {
+        return Invoke-GuestWindowsUpdateRepairSync -VM $VM -GuestCredential $GuestCredential `
+            -GuestScriptPath $GuestScriptPath -GuestWorkingDirectory $GuestWorkingDirectory `
             -LocalDirectory $LocalDirectory
     }
     catch {
-        Invoke-GuestWindowsUpdateRepairSync -VM $VM -GuestCredential $GuestCredential `
-            -GuestScriptPath $GuestScriptPath -GuestWorkingDirectory $GuestWorkingDirectory `
-            -LocalDirectory $LocalDirectory -DeepRepair:$DeepRepair
+        # Fall back to detached worker for environments where sync repair fails.
     }
+
+    $repairHandle = Start-GuestRepairJob -VM $VM -GuestCredential $GuestCredential `
+        -GuestScriptPath $GuestScriptPath -GuestWorkingDirectory $GuestWorkingDirectory
+    Wait-GuestRepairJob -VM $VM -GuestCredential $GuestCredential -RepairHandle $repairHandle `
+        -Server $Server -VCenterCredential $VCenterCredential -IgnoreInvalidCertificate $IgnoreInvalidCertificate `
+        -WebOperationTimeoutSeconds $WebOperationTimeoutSeconds -TimeoutSeconds $TimeoutSeconds `
+        -PollSeconds $PollSeconds
+    Copy-GuestRepairArtifacts -VM $VM -GuestCredential $GuestCredential -RepairHandle $repairHandle `
+        -LocalDirectory $LocalDirectory
 }
 
 function Copy-GuestPatchArtifacts {
@@ -725,5 +780,5 @@ Export-ModuleMember -Function Initialize-PowerCLISession, Connect-PatchVCenter, 
     Repair-PatchVCenterSession, Get-PatchVMInventory, Test-GuestCredential, Get-UniquePatchVM, Test-VMToolsReady,
     Wait-VMToolsReady, Invoke-GuestPowerShell, Enable-GuestLocalAdminTokenPolicy, Test-GuestWindowsUpdateComAvailable,
     Initialize-GuestPatchWorkspace, Reset-GuestPatchWorkspace, Copy-PatchScriptToGuest, Start-GuestPatchCycle,
-    Wait-GuestPatchCycle, Start-GuestRepairJob, Wait-GuestRepairJob, Copy-GuestRepairArtifacts,
+    Invoke-GuestPatchCycleSync, Wait-GuestPatchCycle, Start-GuestRepairJob, Wait-GuestRepairJob, Copy-GuestRepairArtifacts,
     Invoke-GuestWindowsUpdateRepairSync, Invoke-GuestWindowsUpdateRepair, Copy-GuestPatchArtifacts, Restart-PatchVMGuest, Invoke-GuestPostRebootWarmUp, Test-GuestPatchConvergence

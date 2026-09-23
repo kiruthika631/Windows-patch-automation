@@ -188,8 +188,13 @@ $workerResults = @($inventory | ForEach-Object -ThrottleLimit ([int]$settings.th
         }
 
         $stage = 'RepairWindowsUpdate'
-        $comAvailableBeforeRepair = Test-GuestWindowsUpdateComAvailable -VM $vm -GuestCredential $workerGuestCredential
-        if ($comAvailableBeforeRepair) {
+        $deepRepairAttempted = $false
+        $comAvailableBeforeRepair = Test-GuestWindowsUpdateComAvailable -VM $vm -GuestCredential $workerGuestCredential `
+            -SearchCriteria $workerSettings.windowsUpdateSearchCriteria
+        $prePatchConvergence = Test-GuestPatchConvergence -VM $vm -GuestCredential $workerGuestCredential `
+            -SearchCriteria $workerSettings.windowsUpdateSearchCriteria
+
+        if ($comAvailableBeforeRepair -and [int]$prePatchConvergence.PendingUpdates -eq 0) {
             Write-StructuredLog -Path $vmLog -Level Information -Stage $stage -VMName $vmName `
                 -Message 'Windows Update COM is available; skipping pre-patch repair.'
             $repairResult = [pscustomobject]@{
@@ -197,6 +202,74 @@ $workerResults = @($inventory | ForEach-Object -ThrottleLimit ([int]$settings.th
                 comAvailable = $true
                 deepRepairApplied = $false
                 rebootRequired = $false
+            }
+        }
+        elseif ($comAvailableBeforeRepair -and [int]$prePatchConvergence.PendingUpdates -gt 0) {
+            Write-StructuredLog -Path $vmLog -Level Warning -Stage $stage -VMName $vmName `
+                -Message 'Pending updates detected; running forced DISM/SFC deep repair before patching.' -Data @{
+                    pendingUpdates = [int]$prePatchConvergence.PendingUpdates
+                }
+            Invoke-WithRetry -Operation {
+                Copy-PatchScriptToGuest -VM $vm -GuestCredential $workerGuestCredential `
+                    -Source $using:guestRepairScript -Destination $guestRepairScriptPath
+            } -OperationName 'Refresh guest repair script' -MaxAttempts ([int]$workerSettings.retry.maxAttempts) `
+                -InitialDelaySeconds ([int]$workerSettings.retry.initialDelaySeconds) -OnRetry $logRetry
+            if (-not [bool]$workerSettings.autoRebootWhenRequired) {
+                throw "Pending updates require deep repair but autoRebootWhenRequired is disabled for '$vmName'."
+            }
+            $stage = 'Reboot'
+            $reboots++
+            Write-StructuredLog -Path $vmLog -Level Information -Stage $stage -VMName $vmName `
+                -Message 'Rebooting guest before DISM/SFC deep repair to clear servicing registry state.'
+            Restart-PatchVMGuest -VM $vm -Server $viServer -GuestCredential $workerGuestCredential `
+                -TimeoutSeconds ([int]$workerSettings.timeouts.rebootSeconds) `
+                -PollSeconds ([int]$workerSettings.pollIntervalSeconds) `
+                -PostRebootWarmUpSeconds ([Math]::Max($postRebootWarmUpSeconds, 180))
+            $repairResult = Invoke-WithRetry -Operation {
+                Invoke-GuestWindowsUpdateRepair -VM $vm -GuestCredential $workerGuestCredential `
+                    -GuestScriptPath $guestRepairScriptPath -GuestWorkingDirectory $guestDirectory `
+                    -LocalDirectory $localVMDirectory -Server $server -VCenterCredential $workerVCenterCredential `
+                    -IgnoreInvalidCertificate ([bool]$workerSettings.ignoreInvalidCertificate) `
+                    -WebOperationTimeoutSeconds ([int]$workerSettings.timeouts.webOperationSeconds) `
+                    -TimeoutSeconds ([int]$workerSettings.timeouts.repairCycleSeconds) `
+                    -PollSeconds ([int]$workerSettings.pollIntervalSeconds) -DeepRepair:$true -ForceDeepRepair:$true
+            } -OperationName 'Forced deep repair Windows Update Agent' -MaxAttempts ([int]$workerSettings.retry.maxAttempts) `
+                -InitialDelaySeconds ([int]$workerSettings.retry.initialDelaySeconds) -OnRetry $logRetry
+            if ($null -ne $repairResult.dismExitCode) {
+                $deepRepairAttempted = $true
+            }
+            $servicingRepairAttempts = 0
+            while ($null -eq $repairResult.dismExitCode -and [string]$repairResult.status -eq 'RebootRequired' `
+                -and $servicingRepairAttempts -lt 3) {
+                $servicingRepairAttempts++
+                $stage = 'Reboot'
+                $reboots++
+                Write-StructuredLog -Path $vmLog -Level Warning -Stage $stage -VMName $vmName `
+                    -Message 'Retrying DISM/SFC deep repair after servicing registry reboot.' -Data @{
+                        attempt = $servicingRepairAttempts
+                    }
+                Restart-PatchVMGuest -VM $vm -Server $viServer -GuestCredential $workerGuestCredential `
+                    -TimeoutSeconds ([int]$workerSettings.timeouts.rebootSeconds) `
+                    -PollSeconds ([int]$workerSettings.pollIntervalSeconds) `
+                    -PostRebootWarmUpSeconds ([Math]::Max($postRebootWarmUpSeconds, 180))
+                Invoke-WithRetry -Operation {
+                    Copy-PatchScriptToGuest -VM $vm -GuestCredential $workerGuestCredential `
+                        -Source $using:guestRepairScript -Destination $guestRepairScriptPath
+                } -OperationName 'Refresh guest repair script' -MaxAttempts ([int]$workerSettings.retry.maxAttempts) `
+                    -InitialDelaySeconds ([int]$workerSettings.retry.initialDelaySeconds) -OnRetry $logRetry
+                $repairResult = Invoke-WithRetry -Operation {
+                    Invoke-GuestWindowsUpdateRepair -VM $vm -GuestCredential $workerGuestCredential `
+                        -GuestScriptPath $guestRepairScriptPath -GuestWorkingDirectory $guestDirectory `
+                        -LocalDirectory $localVMDirectory -Server $server -VCenterCredential $workerVCenterCredential `
+                        -IgnoreInvalidCertificate ([bool]$workerSettings.ignoreInvalidCertificate) `
+                        -WebOperationTimeoutSeconds ([int]$workerSettings.timeouts.webOperationSeconds) `
+                        -TimeoutSeconds ([int]$workerSettings.timeouts.repairCycleSeconds) `
+                        -PollSeconds ([int]$workerSettings.pollIntervalSeconds) -DeepRepair:$true -ForceDeepRepair:$true
+                } -OperationName 'Forced deep repair Windows Update Agent' -MaxAttempts ([int]$workerSettings.retry.maxAttempts) `
+                    -InitialDelaySeconds ([int]$workerSettings.retry.initialDelaySeconds) -OnRetry $logRetry
+                if ($null -ne $repairResult.dismExitCode) {
+                    $deepRepairAttempted = $true
+                }
             }
         }
         else {
@@ -277,18 +350,11 @@ $workerResults = @($inventory | ForEach-Object -ThrottleLimit ([int]$settings.th
                 -Message "Starting patch cycle $cycle."
 
             $cycleHandle = Invoke-WithRetry -Operation {
-                Start-GuestPatchCycle -VM $vm -GuestCredential $workerGuestCredential `
+                Invoke-GuestPatchCycleSync -VM $vm -GuestCredential $workerGuestCredential `
                     -GuestScriptPath $guestScriptPath -GuestWorkingDirectory $guestDirectory `
                     -SearchCriteria $workerSettings.windowsUpdateSearchCriteria -Cycle $cycle
             } -OperationName "Start patch cycle $cycle" -MaxAttempts ([int]$workerSettings.retry.maxAttempts) `
                 -InitialDelaySeconds ([int]$workerSettings.retry.initialDelaySeconds) -OnRetry $logRetry
-
-            Wait-GuestPatchCycle -VM $vm -GuestCredential $workerGuestCredential -CycleHandle $cycleHandle `
-                -Server $server -VCenterCredential $workerVCenterCredential `
-                -IgnoreInvalidCertificate ([bool]$workerSettings.ignoreInvalidCertificate) `
-                -WebOperationTimeoutSeconds ([int]$workerSettings.timeouts.webOperationSeconds) `
-                -TimeoutSeconds ([int]$workerSettings.timeouts.patchCycleSeconds) `
-                -PollSeconds ([int]$workerSettings.pollIntervalSeconds)
 
             $cycleResult = Invoke-WithRetry -Operation {
                 Copy-GuestPatchArtifacts -VM $vm -GuestCredential $workerGuestCredential -CycleHandle $cycleHandle `
@@ -363,6 +429,56 @@ $workerResults = @($inventory | ForEach-Object -ThrottleLimit ([int]$settings.th
             }
 
             if ($needsReboot) {
+                if ($isRebootOnlyCycle -and [bool]$cycleResult.remediationApplied -and -not $deepRepairAttempted) {
+                    $convergence = & $testConvergence 'COM remediation loop detected; evaluating forced deep repair.'
+                    if ([int]$convergence.PendingUpdates -gt 0) {
+                        $stage = 'RepairWindowsUpdate'
+                        Write-StructuredLog -Path $vmLog -Level Warning -Stage $stage -VMName $vmName `
+                            -Message 'COM remediation did not restore update installation; running forced DISM/SFC deep repair.' -Data @{
+                                pendingUpdates = [int]$convergence.PendingUpdates
+                            }
+                        $repairResult = Invoke-WithRetry -Operation {
+                            Invoke-GuestWindowsUpdateRepair -VM $vm -GuestCredential $workerGuestCredential `
+                                -GuestScriptPath $guestRepairScriptPath -GuestWorkingDirectory $guestDirectory `
+                                -LocalDirectory $localVMDirectory -Server $server -VCenterCredential $workerVCenterCredential `
+                                -IgnoreInvalidCertificate ([bool]$workerSettings.ignoreInvalidCertificate) `
+                                -WebOperationTimeoutSeconds ([int]$workerSettings.timeouts.webOperationSeconds) `
+                                -TimeoutSeconds ([int]$workerSettings.timeouts.repairCycleSeconds) `
+                                -PollSeconds ([int]$workerSettings.pollIntervalSeconds) -DeepRepair:$true -ForceDeepRepair:$true
+                        } -OperationName 'Forced deep repair after COM remediation loop' `
+                            -MaxAttempts ([int]$workerSettings.retry.maxAttempts) `
+                            -InitialDelaySeconds ([int]$workerSettings.retry.initialDelaySeconds) -OnRetry $logRetry
+                        if ($null -ne $repairResult.dismExitCode) {
+                            $deepRepairAttempted = $true
+                        }
+                        Write-StructuredLog -Path $vmLog -Level Information -Stage $stage -VMName $vmName `
+                            -Message 'Forced deep repair completed.' -Data @{
+                                status = [string]$repairResult.status
+                                comAvailable = [bool]$repairResult.comAvailable
+                                deepRepairApplied = [bool]$repairResult.deepRepairApplied
+                                rebootRequired = [bool]$repairResult.rebootRequired
+                            }
+                        if ([string]$repairResult.status -eq 'Failed') {
+                            $repairError = if ($repairResult.error) { $repairResult.error.message } else { 'Unknown repair error.' }
+                            throw "Forced deep repair failed: $repairError"
+                        }
+                        if ([string]$repairResult.status -eq 'RebootRequired' -or [bool]$repairResult.rebootRequired) {
+                            if (-not [bool]$workerSettings.autoRebootWhenRequired) {
+                                throw "Forced deep repair requires a reboot but autoRebootWhenRequired is disabled for '$vmName'."
+                            }
+                            $stage = 'Reboot'
+                            $reboots++
+                            Write-StructuredLog -Path $vmLog -Level Information -Stage $stage -VMName $vmName `
+                                -Message 'Restarting guest after forced deep repair.'
+                            Restart-PatchVMGuest -VM $vm -Server $viServer -GuestCredential $workerGuestCredential `
+                                -TimeoutSeconds ([int]$workerSettings.timeouts.rebootSeconds) `
+                                -PollSeconds ([int]$workerSettings.pollIntervalSeconds) `
+                                -PostRebootWarmUpSeconds ([Math]::Max($postRebootWarmUpSeconds, 180))
+                        }
+                        $consecutiveRebootOnlyCycles = 0
+                        continue
+                    }
+                }
                 if ($isRebootOnlyCycle) {
                     $convergence = & $testConvergence 'Reboot requested with zero installs; checking guest state before reboot.'
                     if ($convergence.IsCompliant) {
