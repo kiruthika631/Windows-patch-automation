@@ -132,6 +132,22 @@ $result = [ordered]@{
 try {
     Write-RepairLog -Level Information -Stage Initialize -Message 'Starting Windows Update Agent repair.'
 
+    try {
+        & "$env:SystemRoot\System32\netsh.exe" winhttp reset proxy | Out-Null
+        $auKey = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'
+        if (Test-Path -LiteralPath $auKey) {
+            Remove-ItemProperty -LiteralPath $auKey -Name UseWUServer -ErrorAction SilentlyContinue
+            Remove-ItemProperty -LiteralPath $auKey -Name WUServer -ErrorAction SilentlyContinue
+            Remove-ItemProperty -LiteralPath $auKey -Name WUStatusServer -ErrorAction SilentlyContinue
+        }
+        Write-RepairLog -Level Information -Stage Initialize -Message 'Reset WinHTTP proxy and cleared WSUS policy overrides when present.'
+    }
+    catch {
+        Write-RepairLog -Level Warning -Stage Initialize -Message 'Could not reset WinHTTP/WSUS settings.' -Data @{
+            error = $_.Exception.Message
+        }
+    }
+
     if ($ForceDeepRepair) {
         $DeepRepair = $true
         Write-RepairLog -Level Warning -Stage DeepRepair -Message 'Forced deep repair requested; running DISM/SFC even if quick COM check passes.'

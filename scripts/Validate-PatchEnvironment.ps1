@@ -81,29 +81,45 @@ Write-Host '      RDP Administrator password is NOT the same as vCenter SSO unle
 $connectionResults = @()
 foreach ($server in $serversToConnect) {
     Write-Host "`nConnecting to vCenter $server..." -ForegroundColor Yellow
-    try {
-        $vi = Connect-PatchVCenter -Server $server -Credential $vCenterCredential `
-            -IgnoreInvalidCertificate ([bool]$settings.ignoreInvalidCertificate) `
-            -WebOperationTimeoutSeconds ([int]$settings.timeouts.webOperationSeconds)
-        $vmCount = (Get-VM -Server $vi | Measure-Object).Count
-        Write-Host "  vCenter connected. Visible VMs: $vmCount" -ForegroundColor Green
-        $connectionResults += [pscustomobject]@{
-            VCenter = $server
-            Status = 'Connected'
-            VMCount = $vmCount
-            Error = ''
+    $connected = $false
+    $lastError = ''
+    $maxAttempts = [Math]::Max([int]$settings.retry.maxAttempts, 3)
+    for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+        try {
+            if ($attempt -gt 1) {
+                Write-Host "  Retry $attempt/$maxAttempts..." -ForegroundColor DarkYellow
+                Start-Sleep -Seconds ([int]$settings.retry.initialDelaySeconds)
+            }
+            $vi = Connect-PatchVCenter -Server $server -Credential $vCenterCredential `
+                -IgnoreInvalidCertificate ([bool]$settings.ignoreInvalidCertificate) `
+                -WebOperationTimeoutSeconds ([int]$settings.timeouts.webOperationSeconds)
+            $vmCount = (Get-VM -Server $vi | Measure-Object).Count
+            Write-Host "  vCenter connected. Visible VMs: $vmCount" -ForegroundColor Green
+            $connectionResults += [pscustomobject]@{
+                VCenter = $server
+                Status = 'Connected'
+                VMCount = $vmCount
+                Error = ''
+            }
+            $connected = $true
+            break
+        }
+        catch {
+            $lastError = $_.Exception.Message
         }
     }
-    catch {
-        Write-Host "  vCenter FAILED: $($_.Exception.Message)" -ForegroundColor Red
+    if (-not $connected) {
+        Write-Host "  vCenter FAILED: $lastError" -ForegroundColor Red
         $connectionResults += [pscustomobject]@{
             VCenter = $server
             Status = 'Failed'
             VMCount = 0
-            Error = $_.Exception.Message
+            Error = $lastError
         }
     }
 }
+
+$connectedVCenters = @($connectionResults | Where-Object Status -eq 'Connected' | ForEach-Object { $_.VCenter })
 
 $vmResults = @()
 foreach ($row in $rowsToCheck) {
@@ -112,6 +128,24 @@ foreach ($row in $rowsToCheck) {
     $server = Get-InventoryVCenter -Row $row
 
     Write-Host "`nChecking VM '$vmName' on $server..." -ForegroundColor Yellow
+    if ($connectedVCenters -notcontains $server) {
+        Write-Host "  SKIPPED: vCenter '$server' is not connected." -ForegroundColor Yellow
+        $vmResults += [pscustomobject]@{
+            VMName = $vmName
+            ResolvedVMName = ''
+            VCenter = $server
+            Status = 'Failed'
+            PowerState = ''
+            ToolsStatus = ''
+            GuestState = ''
+            GuestIP = ''
+            GuestHost = ''
+            ToolsReady = $false
+            Enabled = $row.Enabled
+            Error = "vCenter '$server' is not connected."
+        }
+        continue
+    }
     try {
         $vi = Get-PatchVCenterSession -Server $server
         $vm = Get-UniquePatchVM -VMName $vmName -Server $vi -IPAddress $inventoryIp
@@ -176,9 +210,23 @@ if ($vmResults.Count -gt 0) {
 }
 
 $failedConnections = @($connectionResults | Where-Object Status -ne 'Connected').Count
-$failedVMs = @($vmResults | Where-Object Status -ne 'Found').Count
-if ($failedConnections -gt 0 -or $failedVMs -gt 0) {
-    throw "Validation failed. vCenter failures: $failedConnections, VM failures: $failedVMs"
+$failedVMsOnConnected = @($vmResults | Where-Object {
+        $_.Status -ne 'Found' -and $connectedVCenters -contains $_.VCenter
+    }).Count
+$skippedDueToVCenter = @($vmResults | Where-Object {
+        $_.Status -ne 'Found' -and $connectedVCenters -notcontains $_.VCenter
+    })
+if ($failedConnections -gt 0) {
+    Write-Warning "vCenter connection failures: $failedConnections. VMs on unreachable vCenters will be skipped."
+    foreach ($skip in $skippedDueToVCenter) {
+        Write-Warning "  Skipping '$($skip.VMName)' on $($skip.VCenter) (vCenter not connected)."
+    }
+}
+if ($failedVMsOnConnected -gt 0) {
+    throw "Validation failed for $($failedVMsOnConnected) VM(s) on connected vCenters."
+}
+if (@($vmResults | Where-Object Status -eq 'Found').Count -eq 0) {
+    throw 'No VMs passed validation on any connected vCenter.'
 }
 
 if ($rowsToCheck.Count -eq 0) {
@@ -186,13 +234,21 @@ if ($rowsToCheck.Count -eq 0) {
 }
 
 if ($ExecutePatch) {
-    if ($rowsToCheck.Count -eq 0) {
-        throw 'Cannot execute patch run with zero enabled VMs.'
+    $validatedNames = @($vmResults | Where-Object Status -eq 'Found' | ForEach-Object { $_.VMName })
+    $patchRows = @($rowsToCheck | Where-Object { $validatedNames -contains $_.VMName.Trim() })
+    if ($patchRows.Count -eq 0) {
+        throw 'Cannot execute patch run with zero validated VMs.'
+    }
+    $patchInventoryPath = $InventoryPath
+    if ($patchRows.Count -lt $rowsToCheck.Count) {
+        $patchInventoryPath = Join-Path $reportDir "patch_inventory_$stamp.csv"
+        $patchRows | Export-Csv -LiteralPath $patchInventoryPath -NoTypeInformation
+        Write-Warning "Patching $($patchRows.Count) of $($rowsToCheck.Count) enabled VM(s). Filtered inventory: $patchInventoryPath"
     }
     Write-Host "`n=== Starting patch run ===" -ForegroundColor Cyan
     & (Join-Path $PSScriptRoot 'Invoke-WindowsPatchAutomation.ps1') `
         -SettingsPath $SettingsPath `
-        -InventoryPath $InventoryPath `
+        -InventoryPath $patchInventoryPath `
         -FailOnNonCompliance
 }
 

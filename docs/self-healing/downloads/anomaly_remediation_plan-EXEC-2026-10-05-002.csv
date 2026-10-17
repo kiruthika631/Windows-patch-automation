@@ -1,0 +1,198 @@
+hostname,ip,observed_falcon_cid,tanium_health_csv,crowdstrike_cid_csv,crowdstrike_service_csv,arc_csv,himds_csv,rsyslog_csv,enforce_stryker_cid,planned_actions
+fw-sqa87179.vcraeng.com,10.90.87.179,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa87182.vcraeng.com,10.90.87.182,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa90232.vcraeng.com,10.90.90.232,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Not installed,Not found,Not found,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+blr-sqa123145.vcraeng.com,10.90.123.145,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa90227.vcraeng.com.vcraeng.com.vcraeng.com.vcraeng.com.vcraeng.com.vcraeng.com.vcraeng.com,10.90.90.227,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+hh33154.vcraeng.com,10.128.33.154,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fwaschupgrep2.vcraeng.com,10.90.89.9,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blrlokintegrations01.vcraeng.com,10.90.122.234,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-web-integrations.vcraeng.com,10.90.121.232,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa87102.vcraeng.com,10.90.87.102,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+tse-stt-rhel-1.voceracommunications.com,10.128.51.42,,HEALTHY,No customer ID found,,Connected,active,active,no,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-sire-qa-engage.vcraeng.com,10.90.100.70,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-sqa12836.vcraeng.com,10.90.128.36,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Disconnected,active,Not found,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT;RSYSLOG_INSTALL
+fw-sqa9252.vcraeng.com,10.90.92.52,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+BLR-Sandeep-01.vcraeng.com,10.90.120.181,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+KS-engage-lab-001.vcraeng.com,10.90.92.105,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+tse-ts-rhel-1.voceracommunications.com,10.128.49.76,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa8794.vcraeng.com,10.90.87.94,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa90230.vcraeng.com,10.90.90.230,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Not installed,Not found,Not found,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+stctseef1.vcraeng.com,10.128.50.103,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-mesa-pfm.vcraeng.com,10.90.128.55,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-qa-cell-03.vcraeng.com,10.90.104.136,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Disconnected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_RECONNECT
+fw-sqa88227.vcraeng.com,10.90.88.227,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa8649.vcraeng.com,10.90.86.49,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Not installed,Not found,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR
+fw-sqa9097-64b.vcraeng.com,10.90.90.97,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa9127.vcraeng.com,10.90.91.27,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa89221.vcraeng.com,10.90.89.221,,HEALTHY,Not Installed,,Not installed,Not found,Not found,no,TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+dharani.vcraeng.com,10.90.116.53,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Disconnected,active,active,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT
+fw-sqa89136.vcraeng.com.vcraeng.com,10.90.89.136,,HEALTHY,Not Installed,,Not installed,Not found,Not found,no,TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+blr-dilip01-vm.vcraeng.com,10.90.121.13,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-sqa104216.vcraeng.com,10.90.104.216,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-pallavi-engage-server.vcraeng.com,10.90.121.40,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+tse-nhi-rhel-1.vcraeng.com,10.128.48.85,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-sqa12953.vcraeng.com,10.90.129.53,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-pfm-cs-12845.vcraeng.com,10.90.128.45,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-tenant-service.vcraeng.com,10.90.128.21,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+ts-vul-vik-1.voceracommunications.com,10.128.48.74,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa87178.vcraeng.com,10.90.87.178,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+cirrocumulus.vcraeng.com,10.90.89.11,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+Hh8820.vcraeng.com,10.90.88.20,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+sk-pfm.vcraeng.com,10.128.34.144,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,Not found,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;RSYSLOG_INSTALL
+blrjaganqa01.vcraeng.com,10.90.138.16,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+tse-mh-rhel-1.voceracommunications.com,10.128.48.200,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-sqa12879.vcraeng.com,10.90.128.79,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Disconnected,active,active,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT
+fw-sqa90107.vcraeng.com,10.90.90.107,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Not installed,Not found,Not found,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+fw-dev86194.vcraeng.com,10.90.86.194,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+lagoon-pfm.vcraeng.com,10.90.128.146,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fwaoma01.vcraeng.com,10.90.92.90,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fwaupgcse2.vcraeng.com,10.90.90.51,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+stcdgtse4.vcraeng.com,10.128.48.189,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-diged9238.vcraeng.com,10.90.92.38,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+hh10185.vcraeng.com,10.90.101.85,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Disconnected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_RECONNECT
+blr-kmk6dot5-01.vcraeng.com,10.90.100.88,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+cloud-proxy.holodeck.vcraeng.com,10.128.32.65,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+falcon-pfm2.vcraeng.com,10.128.34.93,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-sqa105159.vcraeng.com,10.90.105.159,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+tse-dba-rhel-1.voceracommunications.com,10.128.50.127,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-sqa129191.vcraeng.com,10.90.129.191,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-12215ldapserver.vcraeng.com,10.90.122.15,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fwabeotest1.vcraeng.com,10.90.90.117,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+sjc-ball-voc01.vcraeng.com,10.22.36.28,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fwaupgcse5.vcraeng.com,10.90.90.55,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-sqa129100.vcraeng.com,10.90.129.100,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa9096-64a.vcraeng.com,10.90.90.96,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa9058.vcraeng.com,10.90.90.58,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-sqa12899.vcraeng.com,10.90.128.99,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Connected,active,failed,no,TANIUM_RESTART_SERVICE;RSYSLOG_RESTART
+fw-sqa9260.vcraeng.com,10.90.92.60,,HEALTHY,Not Installed,,Not installed,Not found,Not found,no,TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+fw-sqa8694.vcraeng.com.vcraeng.com.vcraeng.com.vcraeng.com.vcraeng.com.vcraeng.com.vcraeng.com,10.90.86.94,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa9261.vcraeng.com,10.90.92.61,,HEALTHY,Not Installed,,Not installed,Not found,Not found,no,TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+fwaengjra73.vcraeng.com,10.90.86.119,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa91130.vcraeng.com,10.90.91.130,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa8695.vcraeng.com.vcraeng.com.vcraeng.com.vcraeng.com,10.90.86.95,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa87108.vcraeng.com,10.90.87.108,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+hh33130.vcraeng.com,10.128.33.130,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+hh88239.vcraeng.com,10.90.88.239,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa9122.vcraeng.com,10.90.91.22,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa9254.vcraeng.com,10.90.92.54,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+hh35135.vcraeng.com,10.128.35.135,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa89134.vcraeng.com,10.90.89.134,,HEALTHY,Not Installed,,Not installed,Not found,Not found,no,TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+hh12033.vcraeng.com,10.90.120.33,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+sc-32251.vcraeng.com,10.128.32.251,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa90226.vcraeng.com,10.90.90.226,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-esc8637.vcraeng.com,10.90.86.37,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fwaedgenna1.vcraeng.com,10.90.89.225,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fwaupgcse1.vcraeng.com,10.90.90.19,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-qa-engage-01.vcraeng.com,10.90.122.151,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+stratocumulus.vcraeng.com,10.90.88.167,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+VS66-Platform.vcraeng.com,10.22.36.141,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+sd-polaris-2021.vcraeng.com,10.22.37.146,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+Cirrus.vcraeng.com,10.90.89.72,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+hh32212.vcraeng.com,10.128.32.212,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-creddy03-vm.vcraeng.com,10.90.120.248,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-vaibhav16.vcraeng.com,10.90.105.205,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-sqa100145.vcraeng.com,10.90.100.145,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Disconnected,active,active,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT
+hh8827.vcraeng.com,10.90.88.27,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+hh8306.vcraeng.com,10.107.83.6,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-dhruva-engage.vcraeng.com,10.90.128.202,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-sqa104200.vcraeng.com,10.90.104.200,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa9265.vcraeng.com,10.90.92.65,,HEALTHY,Not Installed,,Not installed,Not found,Not found,no,TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+blr-sqa120171.vcraeng.com,10.90.120.171,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fwabenotest1.vcraeng.com,10.90.86.235,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa9128.vcraeng.com,10.90.91.28,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa9255.vcraeng.com,10.90.92.55,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-nwm-rhel01.vcraeng.com,10.90.128.174,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fwajkeeng1.vcraeng.com,10.90.90.200,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-sqa123146.vcraeng.com,10.90.123.146,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-da-simulator2.vcraeng.com,10.90.92.37,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+hh88117.vcraeng.com,10.90.88.117,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa9262.vcraeng.com,10.90.92.62,,HEALTHY,Not Installed,,Not installed,Not found,Not found,no,TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+fw-sqa89222.vcraeng.com.vcraeng.com,10.90.89.222,,HEALTHY,Not Installed,,Not installed,Not found,Not found,no,TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+tse-ab-rhel-1.voceracommunications.com,10.128.48.212,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+ts-vul-vik-2.voceracommunications.com,10.128.48.75,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+hh88240.vcraeng.com,10.90.88.240,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+hh88119.vcraeng.com,10.90.88.119,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+sc-dev33221.vcraeng.com,10.128.33.221,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa90229.vcraeng.com,10.90.90.229,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Not installed,Not found,Not found,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+tse-ts-rhel-2.voceracommunications.com,10.128.49.77,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+hh88111.vcraeng.com,10.90.88.111,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Disconnected,active,active,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT
+blr-edge-mobile01.vcraeng.com,10.90.122.37,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Error: unrecognized agent status 'Expired',active,active,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT
+blr-shrikant-rhel02.vcraeng.com,10.90.128.121,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-dilip07-vm.vcraeng.com,10.90.123.153,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa9220.vcraeng.com,10.90.92.20,,HEALTHY,Not Installed,,Not installed,Not found,active,no,TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR
+ubuntu-pbx.voceracommunications.com,10.37.231.12,,HEALTHY,Not Installed,,Connected,active,active,no,TANIUM_RESTART_SERVICE
+blr-sqa105128.vcraeng.com,10.90.105.128,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa9130.vcraeng.com,10.90.91.30,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-sqa129230.vcraeng.com,10.90.129.230,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa87200.vcraeng.com,10.90.87.200,,HEALTHY,Not Installed,,Not installed,Not found,active,no,TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR
+blr-abbascom2.vcraeng.com.vcraeng.com.vcraeng.com.vcraeng.com.vcraeng.com.vcraeng.com,10.90.100.252,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Connected,active,failed,no,TANIUM_RESTART_SERVICE;RSYSLOG_RESTART
+blr-sqa128101.vcraeng.com,10.90.128.101,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa-design.vcraeng.com,10.90.86.38,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-sqa104207.vcraeng.com,10.90.104.207,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Disconnected,active,active,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT
+fw-sqa89137.vcraeng.com.vcraeng.com,10.90.89.137,,HEALTHY,Not Installed,,Not installed,Not found,Not found,no,TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+fw-sqa8797.vcraeng.com,10.90.87.97,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-sqa128250.vcraeng.com,10.90.128.250,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Disconnected,active,active,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT
+blr-sivaji-reddy03.vcraeng.com,10.90.105.149,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa90106.vcraeng.com,10.90.90.106,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Not installed,Not found,Not found,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+tse-stt-rhel-1.voceracommunications.com,10.128.51.102,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa8699.vcraeng.com,10.90.86.99,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Not installed,Not found,Not found,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+fw-sqa90231.vcraeng.com,10.90.90.231,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Not installed,Not found,Not found,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+fw-sqa8698.vcraeng.com,10.90.86.98,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Not installed,Not found,Not found,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+blr-sqa104177.vcraeng.com,10.90.104.177,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Disconnected,active,active,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT
+fw-sqa8796.vcraeng.com,10.90.87.96,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+regulus-app3.vcraeng.com,10.90.116.106,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Disconnected,active,active,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT
+engage.voceracommunications.com,10.22.36.251,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Disconnected,active,active,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT
+blr-sqa104208.vcraeng.com,10.90.104.208,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Disconnected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_RECONNECT
+tse-sn-rhel-1.voceracommunications.com,10.128.49.50,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Disconnected,active,active,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT
+axen.vcraeng.com,10.128.35.176,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+ts-cg-rhel-1.ts-cg-rhel-1.voceracommunications.com,10.128.48.88,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+engage.engage,172.20.2.3,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Disconnected,active,active,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT
+byod41.patienttouch.com,10.128.45.142,,HEALTHY,Not Installed,,Not installed,Error: systemctl not available,Error: systemctl not available,no,TANIUM_RESTART_SERVICE;ARC_INSTALL
+fw-sqa8622.vcraeng.com,10.90.86.22,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+BLR-RHEL10076.vcraeng.com,10.90.100.76,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Disconnected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_RECONNECT
+blr-sqa120179.vcraeng.com,10.90.120.179,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Disconnected,active,active,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT
+blr-sqa120180.vcraeng.com,10.90.120.180,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Disconnected,active,active,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT
+fw-sqa86136.vcraeng.com,10.90.86.136,,HEALTHY,Not Installed,,Not installed,Not found,Not found,no,TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+blr-sqa12188.vcraeng.com,10.90.121.88,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-pfm-cs-12844.vcraeng.com,10.90.128.44,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-sire-vocera-engage.vcraeng.com,10.90.100.50,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+kobe.vcraeng.com,10.90.116.233,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-qa-sudeepa-01.vcraeng.com,10.90.122.49,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa90182.vcraeng.com,10.90.90.182,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+agni.vcraeng.com,10.90.116.162,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,"Error: time=""2026-10-12T06:41:01-04:00"" level=info msg=""Control-C received.  Terminating..."" time=""2026-10-12T06:41:01-04:00"" level=info msg=""AZCM0011: Control C Pressed"" time=""2026-10-12T06:41:01-04:00"" lev",active,active,no,TANIUM_RESTART_SERVICE
+hydra-voip1.vcraeng.com,10.90.122.67,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Disconnected,active,active,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT
+fw-upg9231.vcraeng.com,10.90.92.31,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa9090.vcraeng.com,10.90.90.90,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa8793.vcraeng.com.vcraeng.com,10.90.87.93,,HEALTHY,Not Installed,,Not installed,Not found,Not found,no,TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+blr-sqa105157.vcraeng.com,10.90.105.157,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-loknath-adapters.vcraeng.com,10.90.123.140,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+cumulus.vcraeng.com,10.128.39.175,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-pfm-qa-19.vcraeng.com,10.90.129.19,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa89135.vcraeng.com,10.90.89.135,,HEALTHY,Not Installed,,Not installed,Not found,Not found,no,TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+blr-qa-vina-01.vcraeng.com,10.90.105.91,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa86118.vcraeng.com,10.90.86.118,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Not installed,Not found,Not found,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+fwaoazgraf1.vcraeng.com,10.90.90.210,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Not installed,Not found,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR
+blr-sqa100144.vcraeng.com,10.90.100.144,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Disconnected,active,active,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT
+tse-mh-rhel-04.tse-mh-rhel-04.voceracommunications.com,10.128.48.204,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Not installed,Not found,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR
+fw-sqa9266.vcraeng.com,10.90.92.66,,HEALTHY,Not Installed,,Not installed,Not found,Not found,no,TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+fw-sqa86222.vcraeng.com,10.90.86.222,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Not installed,Not found,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR
+fw-sqa88253.vcraeng.com,10.90.88.253,,HEALTHY,Not Installed,,Not installed,Not found,active,no,TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR
+fw-sqa8743.vcraeng.com,10.90.87.43,,HEALTHY,Not Installed,,Not installed,Not found,active,no,TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR
+fw-sqa90195.vcraeng.com,10.90.90.195,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Not installed,Not found,Not found,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+fw-sqa91157.vcraeng.com,10.90.91.157,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Not installed,Not found,Not found,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+fw-sqa91161.vcraeng.com,10.90.91.161,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Not installed,Not found,Not found,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+fw-sqa89133.vcraeng.com,10.90.89.133,,HEALTHY,Not Installed,,Not installed,Not found,Not found,no,TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR;RSYSLOG_INSTALL
+stc-prod-automation.vcraeng.com,10.128.34.240,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Disconnected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_RECONNECT
+fw-upg9232.vcraeng.com,10.90.92.32,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Not installed,Not found,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_INSTALL;ARC_REPAIR
+stc-tharun-automation.vcraeng.com,10.128.34.194,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Disconnected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_RECONNECT
+fw-sqa90228.vcraeng.com,10.90.90.228,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+fw-sqa8669.vcraeng.com,10.90.86.69,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-andirie-vm.vcraeng.com,10.90.120.61,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Disconnected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_RECONNECT
+fw-sqa90173.vcraeng.com,10.90.90.173,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+blr-pallabi-05.vcraeng.com,10.90.138.47,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Disconnected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_RECONNECT
+vesta.vcraeng.com,10.90.116.230,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Disconnected,active,active,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT
+hh10186.vcraeng.com,10.90.101.86,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Disconnected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE;ARC_RECONNECT
+blr-qa-vina-02.vcraeng.com,10.90.105.95,,HEALTHY,CrowdStrike Falcon sensor is reporting to non-Stryker,,Connected,active,active,yes,CS_RECONFIGURE;TANIUM_RESTART_SERVICE
+sc3245.vcraeng.com,10.128.32.45,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Disconnected,active,Not found,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT;RSYSLOG_INSTALL
+sc3246.vcraeng.com,10.128.32.46,,HEALTHY,CrowdStrike Falcon sensor is reporting to Stryker,,Disconnected,active,Not found,no,TANIUM_RESTART_SERVICE;ARC_RECONNECT;RSYSLOG_INSTALL

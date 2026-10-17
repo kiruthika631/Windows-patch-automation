@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Self_healing Platform</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <aside class="sidebar">
+    <h1>Self_healing</h1>
+    <p class="tagline">Tanium fleet health &amp; remediation</p>
+    <nav>
+      <a href="#overview">Overview</a>
+      <a href="#flow">End-to-end flow</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#ssh">SSH (port 22)</a>
+      <a href="#files">File catalog</a>
+      <a href="#stack">Tech stack</a>
+      <a href="#runbook">Runbook</a>
+    </nav>
+  </aside>
+  <main>
+    <section id="overview">
+      <h2>Overview</h2>
+      <p>Ingest Tanium linux_servers_full_agent_status.csv (~807 hosts), SSH with up to 10 cred profiles,
+      assess Tanium/Falcon/Arc/rsyslog, remediate via Ansible when DRY_RUN=false, output EXEC-*.xlsx.</p>
+      <p><strong>Active delivery:</strong> TANIUM_REPORT_MODE=drop — upload to reports/drop/.</p>
+      <p><strong>On hold:</strong> O365 email fetch, Atlas API scrape.</p>
+      <table><tr><th>Day</th><th>Action</th></tr>
+      <tr><td>14 / 28</td><td>Snapshot archive from drop</td></tr>
+      <tr><td>15 / 29</td><td>Full pipeline execution</td></tr></table>
+    </section>
+    <section id="flow">
+      <h2>End-to-end flow</h2>
+      <ol class="flow-list">
+        <li><strong>A Report</strong> — SCP to reports/drop/</li>
+        <li><strong>B Trigger</strong> — initiate_run.py or monthly_controller.py</li>
+        <li><strong>C Snapshot</strong> — atlas_fetch.py → archive + incoming</li>
+        <li><strong>D Ingest</strong> — csv_source.py → DB + EXEC inventory</li>
+        <li><strong>E Fleet</strong> — pipeline.py parallel SSH, compliance, Ansible</li>
+        <li><strong>F Excel</strong> — reporting/excel.py → reports/generated/</li>
+      </ol>
+      <pre class="diagram">[drop] → [snapshot] → [parse] → [parallel SSH ×807] → [EXEC-*.xlsx]</pre>
+    </section>
+    <section id="architecture">
+      <h2>Architecture</h2>
+      <pre class="diagram">Tanium → drop → pipeline → ssh_collector + compliance → ansible_exec → Excel
+         secrets/credentials.json          ssh_compat.py              playbooks/</pre>
+    </section>
+    <section id="ssh">
+      <h2>SSH mechanism</h2>
+      <ul>
+        <li>ssh_compat.py — legacy KEX, ssh-rsa, known_hosts accept-new</li>
+        <li>Paramiko 3.x + OpenSSH/sshpass fallback</li>
+        <li>Auto ssh-keygen -R on host key mismatch</li>
+        <li>Try cred-01…10; remediation uses winning cred only</li>
+      </ul>
+    </section>
+    <section id="files">
+      <h2>Key files</h2>
+      <table>
+        <tr><th>Path</th><th>Role</th></tr>
+        <tr><td>backend/services/pipeline.py</td><td>Orchestration</td></tr>
+        <tr><td>backend/services/ssh_collector.py</td><td>SSH health</td></tr>
+        <tr><td>backend/compliance/engine.py</td><td>Policy decisions</td></tr>
+        <tr><td>backend/remediation/ansible_exec.py</td><td>Playbooks</td></tr>
+        <tr><td>secrets/credentials/credentials.json</td><td>10 SSH profiles</td></tr>
+      </table>
+      <p>Full catalog: Next.js site /files or PDF guide.</p>
+    </section>
+    <section id="stack">
+      <h2>Tech stack</h2>
+      <p>Python 3.9+, SQLAlchemy, Paramiko &lt;4, ansible-runner, openpyxl, FastAPI (optional), Next.js (this site).</p>
+    </section>
+    <section id="runbook">
+      <h2>Runbook</h2>
+      <pre class="cmd">cd Self_healing
+python3 scripts/verify_readiness.py
+python3 scripts/initiate_run.py --dry-run --force-rerun --parallel 15</pre>
+      <p>Next.js full site: <code>./scripts/serve_platform_website.sh</code> (needs Node/npm).</p>
+    </section>
+  </main>
+</body>
+</html>

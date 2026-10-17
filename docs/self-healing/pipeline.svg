@@ -1,0 +1,190 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 1300" width="1100" height="1300" role="img" aria-label="Self_healing pipeline from fetch or drop to completion">
+<style>text{font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}.ti{font-size:14px;font-weight:700;fill:#e6e8ec}.s{font-size:11.5px;fill:#b7c0ce}.dim{fill:#7d8799}.n{font-size:12px;font-weight:700;fill:#0b0d11}.lane{font-size:11px;font-weight:700;letter-spacing:.14em;fill:#7d8799}.tt{font-size:12.5px;font-weight:700}.cap{font-size:11.5px;fill:#9aa3b2;font-family:ui-monospace,Menlo,Consolas,monospace}</style>
+<defs>
+<marker id="a-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3b82f6"/></marker>
+<marker id="a-sky" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0ea5e9"/></marker>
+<marker id="a-indigo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#6366f1"/></marker>
+<marker id="a-cyan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#06b6d4"/></marker>
+<marker id="a-violet" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8b5cf6"/></marker>
+<marker id="a-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#a855f7"/></marker>
+<marker id="a-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14b8a6"/></marker>
+<marker id="a-emerald" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#10b981"/></marker>
+<marker id="a-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f59e0b"/></marker>
+<marker id="a-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#f97316"/></marker>
+<marker id="a-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ef4444"/></marker>
+<marker id="a-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#22c55e"/></marker>
+<marker id="a-pink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#ec4899"/></marker>
+<marker id="a-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#64748b"/></marker>
+</defs>
+<rect width="1100" height="1300" fill="#0b0d11"/>
+<text x="144" y="30" class="lane" text-anchor="middle">STORES</text>
+<text x="530" y="30" class="lane" text-anchor="middle">PIPELINE · FETCH / DROP → COMPLETION</text>
+<text x="938" y="30" class="lane" text-anchor="middle">OUTCOMES</text>
+<rect x="40" y="56" width="330" height="74" rx="8" fill="#3b82f6" fill-opacity=".16" stroke="#3b82f6" stroke-width="1.4"/><rect x="40" y="56" width="6" height="74" rx="3" fill="#3b82f6"/>
+<text x="60" y="82" class="ti" text-anchor="start">Tanium Ambient email</text>
+<text x="60" y="102" class="s" text-anchor="start">16:00 IST on 14th / 28th</text>
+<text x="60" y="119" class="s dim" text-anchor="start">Graph fetch (o365_email)</text>
+<rect x="385" y="56" width="330" height="74" rx="8" fill="#3b82f6" fill-opacity=".16" stroke="#3b82f6" stroke-width="1.4"/><rect x="385" y="56" width="6" height="74" rx="3" fill="#3b82f6"/>
+<text x="405" y="82" class="ti" text-anchor="start">Manual SCP</text>
+<text x="405" y="102" class="s" text-anchor="start">copy file to reports/drop/</text>
+<text x="405" y="119" class="s dim" text-anchor="start">active today</text>
+<rect x="730" y="56" width="330" height="74" rx="8" fill="#3b82f6" fill-opacity=".16" stroke="#3b82f6" stroke-width="1.4"/><rect x="730" y="56" width="6" height="74" rx="3" fill="#3b82f6"/>
+<text x="750" y="82" class="ti" text-anchor="start">Tanium Connect → SFTP</text>
+<text x="750" y="102" class="s" text-anchor="start">full 2,166-row list to drop</text>
+<text x="750" y="119" class="s dim" text-anchor="start">recommended</text>
+<text x="52" y="50" class="lane" text-anchor="start">1  INTAKE</text>
+<path d="M205,130 C205,149.0 530.0,149.0 530.0,168" fill="none" stroke="#3b82f6" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#a-blue)"/>
+<path d="M550,130 C550,149.0 530.0,149.0 530.0,168" fill="none" stroke="#3b82f6" stroke-width="1.8" marker-end="url(#a-blue)"/>
+<path d="M895,130 C895,149.0 530.0,149.0 530.0,168" fill="none" stroke="#3b82f6" stroke-width="1.8" marker-end="url(#a-blue)"/>
+<rect x="286" y="604" width="488" height="462" rx="12" fill="#14b8a6" fill-opacity=".04" stroke="#14b8a6" stroke-opacity=".55" stroke-dasharray="6 5"/>
+<text x="300" y="624" class="cap" text-anchor="start">PER HOST · 10 in parallel · repeats for every machine in the list</text>
+<rect x="300" y="170" width="460" height="62" rx="8" fill="#0ea5e9" fill-opacity=".13" stroke="#0ea5e9" stroke-width="1.4"/><rect x="300" y="170" width="6" height="62" rx="3" fill="#0ea5e9"/>
+<circle cx="328" cy="192" r="11" fill="#0ea5e9"/>
+<text x="328" y="196" class="n" text-anchor="middle">2</text>
+<text x="348" y="197" class="ti" text-anchor="start">Drop folder</text>
+<text x="320" y="214" class="s" text-anchor="start">reports/drop/linux_servers_full_agent_status.csv | .xlsx</text>
+<text x="320" y="228" class="s dim" text-anchor="start">o365_email_fetch.py prefers the full inventory attachment</text>
+<path d="M530.0,232 L530.0,256" fill="none" stroke="#6366f1" stroke-width="1.8" marker-end="url(#a-indigo)"/>
+<rect x="800" y="176" width="276" height="50" rx="7" fill="#f59e0b" fill-opacity=".16" stroke="#f59e0b" stroke-width="1.4"/><rect x="800" y="176" width="6" height="50" rx="3" fill="#f59e0b"/>
+<text x="816" y="197" class="tt" fill="#f59e0b">Only anomalies.csv attached</text>
+<text x="816" y="215" class="s" text-anchor="start">saved separately · PARTIAL warning</text>
+<path d="M760,201.0 L798,201" fill="none" stroke="#f59e0b" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#a-amber)"/>
+<rect x="300" y="258" width="460" height="62" rx="8" fill="#6366f1" fill-opacity=".13" stroke="#6366f1" stroke-width="1.4"/><rect x="300" y="258" width="6" height="62" rx="3" fill="#6366f1"/>
+<circle cx="328" cy="280" r="11" fill="#6366f1"/>
+<text x="328" y="284" class="n" text-anchor="middle">3</text>
+<text x="348" y="285" class="ti" text-anchor="start">Trigger</text>
+<text x="320" y="302" class="s" text-anchor="start">cron → monthly_controller.py (15th / 29th, Asia/Kolkata)</text>
+<text x="320" y="316" class="s dim" text-anchor="start">or manual: initiate_run.py --dry-run | --production</text>
+<path d="M530.0,320 L530.0,344" fill="none" stroke="#06b6d4" stroke-width="1.8" marker-end="url(#a-cyan)"/>
+<rect x="800" y="264" width="276" height="50" rx="7" fill="#64748b" fill-opacity=".16" stroke="#64748b" stroke-width="1.4"/><rect x="800" y="264" width="6" height="50" rx="3" fill="#64748b"/>
+<text x="816" y="285" class="tt" fill="#64748b">Not a run day</text>
+<text x="816" y="303" class="s" text-anchor="start">exit · nothing touched</text>
+<path d="M760,289.0 L798,289" fill="none" stroke="#64748b" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#a-gray)"/>
+<rect x="300" y="346" width="460" height="62" rx="8" fill="#06b6d4" fill-opacity=".13" stroke="#06b6d4" stroke-width="1.4"/><rect x="300" y="346" width="6" height="62" rx="3" fill="#06b6d4"/>
+<circle cx="328" cy="368" r="11" fill="#06b6d4"/>
+<text x="328" y="372" class="n" text-anchor="middle">4</text>
+<text x="348" y="373" class="ti" text-anchor="start">Snapshot &amp; validate</text>
+<text x="320" y="390" class="s" text-anchor="start">atlas_fetch.py → incoming/ + archive/ · SHA-256</text>
+<text x="320" y="404" class="s dim" text-anchor="start">freshness check (MAX_REPORT_AGE_HOURS) · schema check</text>
+<path d="M530.0,408 L530.0,432" fill="none" stroke="#8b5cf6" stroke-width="1.8" marker-end="url(#a-violet)"/>
+<rect x="800" y="352" width="276" height="50" rx="7" fill="#ef4444" fill-opacity=".16" stroke="#ef4444" stroke-width="1.4"/><rect x="800" y="352" width="6" height="50" rx="3" fill="#ef4444"/>
+<text x="816" y="373" class="tt" fill="#ef4444">Invalid or stale report</text>
+<text x="816" y="391" class="s" text-anchor="start">execution closed as &#x27;invalid&#x27;</text>
+<path d="M760,377.0 L798,377" fill="none" stroke="#ef4444" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#a-red)"/>
+<rect x="300" y="434" width="460" height="62" rx="8" fill="#8b5cf6" fill-opacity=".13" stroke="#8b5cf6" stroke-width="1.4"/><rect x="300" y="434" width="6" height="62" rx="3" fill="#8b5cf6"/>
+<circle cx="328" cy="456" r="11" fill="#8b5cf6"/>
+<text x="328" y="460" class="n" text-anchor="middle">5</text>
+<text x="348" y="461" class="ti" text-anchor="start">Parse &amp; build state</text>
+<text x="320" y="478" class="s" text-anchor="start">csv_source.py · normalize.py · ip_extract.py · de-duplicate</text>
+<text x="320" y="492" class="s dim" text-anchor="start">upsert servers · EXEC-YYYY-MM-DD-NNN &#x27;running&#x27; · inventory .yml</text>
+<path d="M530.0,496 L530.0,520" fill="none" stroke="#a855f7" stroke-width="1.8" marker-end="url(#a-purple)"/>
+<rect x="300" y="522" width="460" height="62" rx="8" fill="#a855f7" fill-opacity=".13" stroke="#a855f7" stroke-width="1.4"/><rect x="300" y="522" width="6" height="62" rx="3" fill="#a855f7"/>
+<circle cx="328" cy="544" r="11" fill="#a855f7"/>
+<text x="328" y="548" class="n" text-anchor="middle">6</text>
+<text x="348" y="549" class="ti" text-anchor="start">Fleet engine</text>
+<text x="320" y="566" class="s" text-anchor="start">services/pipeline.py · batches of MAX_PARALLEL_SERVERS (10)</text>
+<text x="320" y="580" class="s dim" text-anchor="start">commit before slow steps · safety pause on remediation failures</text>
+<path d="M530.0,584 L530.0,634" fill="none" stroke="#14b8a6" stroke-width="1.8" marker-end="url(#a-teal)"/>
+<rect x="300" y="636" width="460" height="62" rx="8" fill="#14b8a6" fill-opacity=".13" stroke="#14b8a6" stroke-width="1.4"/><rect x="300" y="636" width="6" height="62" rx="3" fill="#14b8a6"/>
+<circle cx="328" cy="658" r="11" fill="#14b8a6"/>
+<text x="328" y="662" class="n" text-anchor="middle">7</text>
+<text x="348" y="663" class="ti" text-anchor="start">SSH login</text>
+<text x="320" y="680" class="s" text-anchor="start">credential sets in order (hint first) · Paramiko → OpenSSH fallback</text>
+<text x="320" y="694" class="s dim" text-anchor="start">wrong password → next set · host unreachable → stop</text>
+<path d="M530.0,698 L530.0,722" fill="none" stroke="#10b981" stroke-width="1.8" marker-end="url(#a-emerald)"/>
+<rect x="800" y="642" width="276" height="50" rx="7" fill="#ef4444" fill-opacity=".16" stroke="#ef4444" stroke-width="1.4"/><rect x="800" y="642" width="6" height="50" rx="3" fill="#ef4444"/>
+<text x="816" y="663" class="tt" fill="#ef4444">AUTHENTICATION_FAILED · SSH_FAILED</text>
+<text x="816" y="681" class="s" text-anchor="start">no set worked / no route / timeout</text>
+<path d="M760,667.0 L798,667" fill="none" stroke="#ef4444" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#a-red)"/>
+<rect x="300" y="724" width="460" height="62" rx="8" fill="#10b981" fill-opacity=".13" stroke="#10b981" stroke-width="1.4"/><rect x="300" y="724" width="6" height="62" rx="3" fill="#10b981"/>
+<circle cx="328" cy="746" r="11" fill="#10b981"/>
+<text x="328" y="750" class="n" text-anchor="middle">8</text>
+<text x="348" y="751" class="ti" text-anchor="start">Health collection</text>
+<text x="320" y="768" class="s" text-anchor="start">collect_health.sh via sudo -n (read-only)</text>
+<text x="320" y="782" class="s dim" text-anchor="start">Tanium · CrowdStrike · Azure Arc · Sentinel · rsyslog facts</text>
+<path d="M530.0,786 L530.0,810" fill="none" stroke="#f59e0b" stroke-width="1.8" marker-end="url(#a-amber)"/>
+<rect x="800" y="730" width="276" height="50" rx="7" fill="#f59e0b" fill-opacity=".16" stroke="#f59e0b" stroke-width="1.4"/><rect x="800" y="730" width="6" height="50" rx="3" fill="#f59e0b"/>
+<text x="816" y="751" class="tt" fill="#f59e0b">UNSUPPORTED_OS</text>
+<text x="816" y="769" class="s" text-anchor="start">outside the OS support matrix</text>
+<path d="M760,755.0 L798,755" fill="none" stroke="#f59e0b" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#a-amber)"/>
+<rect x="300" y="812" width="460" height="62" rx="8" fill="#f59e0b" fill-opacity=".13" stroke="#f59e0b" stroke-width="1.4"/><rect x="300" y="812" width="6" height="62" rx="3" fill="#f59e0b"/>
+<circle cx="328" cy="834" r="11" fill="#f59e0b"/>
+<text x="328" y="838" class="n" text-anchor="middle">9</text>
+<text x="348" y="839" class="ti" text-anchor="start">Decide</text>
+<text x="320" y="856" class="s" text-anchor="start">health.py → compliance/engine.py → catalog action IDs</text>
+<text x="320" y="870" class="s dim" text-anchor="start">AI advisory note · remediation/policy.py validates the plan</text>
+<path d="M530.0,874 L530.0,898" fill="none" stroke="#f97316" stroke-width="1.8" marker-end="url(#a-orange)"/>
+<rect x="800" y="818" width="276" height="50" rx="7" fill="#22c55e" fill-opacity=".16" stroke="#22c55e" stroke-width="1.4"/><rect x="800" y="818" width="6" height="50" rx="3" fill="#22c55e"/>
+<text x="816" y="839" class="tt" fill="#22c55e">HEALTHY  ·  BLOCKED_BY_POLICY</text>
+<text x="816" y="857" class="s" text-anchor="start">all agents ok  /  no sudo or no catalog fix</text>
+<path d="M760,843.0 L798,843" fill="none" stroke="#22c55e" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#a-green)"/>
+<rect x="300" y="900" width="460" height="62" rx="8" fill="#f97316" fill-opacity=".13" stroke="#f97316" stroke-width="1.4"/><rect x="300" y="900" width="6" height="62" rx="3" fill="#f97316"/>
+<circle cx="328" cy="922" r="11" fill="#f97316"/>
+<text x="328" y="926" class="n" text-anchor="middle">10</text>
+<text x="348" y="927" class="ti" text-anchor="start">Remediate (Ansible)</text>
+<text x="320" y="944" class="s" text-anchor="start">catalog playbook · copy tool script + RPM for EL version / arch</text>
+<text x="320" y="958" class="s dim" text-anchor="start">*_tool.sh install | restart | repair | reconnect · MAX_RETRIES</text>
+<path d="M530.0,962 L530.0,986" fill="none" stroke="#22c55e" stroke-width="1.8" marker-end="url(#a-green)"/>
+<rect x="800" y="906" width="276" height="50" rx="7" fill="#0ea5e9" fill-opacity=".16" stroke="#0ea5e9" stroke-width="1.4"/><rect x="800" y="906" width="6" height="50" rx="3" fill="#0ea5e9"/>
+<text x="816" y="927" class="tt" fill="#0ea5e9">DRY_RUN</text>
+<text x="816" y="945" class="s" text-anchor="start">actions planned only, nothing executed</text>
+<path d="M760,931.0 L798,931" fill="none" stroke="#0ea5e9" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#a-sky)"/>
+<rect x="300" y="988" width="460" height="62" rx="8" fill="#22c55e" fill-opacity=".13" stroke="#22c55e" stroke-width="1.4"/><rect x="300" y="988" width="6" height="62" rx="3" fill="#22c55e"/>
+<circle cx="328" cy="1010" r="11" fill="#22c55e"/>
+<text x="328" y="1014" class="n" text-anchor="middle">11</text>
+<text x="348" y="1015" class="ti" text-anchor="start">Post-validation</text>
+<text x="320" y="1032" class="s" text-anchor="start">re-run collect_health.sh with the winning credential</text>
+<text x="320" y="1046" class="s dim" text-anchor="start">each agent compared pre vs post</text>
+<path d="M530.0,1050 L530.0,1092" fill="none" stroke="#ec4899" stroke-width="1.8" marker-end="url(#a-pink)"/>
+<rect x="800" y="994" width="276" height="50" rx="7" fill="#22c55e" fill-opacity=".16" stroke="#22c55e" stroke-width="1.4"/><rect x="800" y="994" width="6" height="50" rx="3" fill="#22c55e"/>
+<text x="816" y="1015" class="tt" fill="#22c55e">REMEDIATION_SUCCESS  /  FAILED</text>
+<text x="816" y="1033" class="s" text-anchor="start">fixed and confirmed  /  still unhealthy</text>
+<path d="M760,1019.0 L798,1019" fill="none" stroke="#22c55e" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#a-green)"/>
+<rect x="300" y="1094" width="460" height="62" rx="8" fill="#ec4899" fill-opacity=".13" stroke="#ec4899" stroke-width="1.4"/><rect x="300" y="1094" width="6" height="62" rx="3" fill="#ec4899"/>
+<circle cx="328" cy="1116" r="11" fill="#ec4899"/>
+<text x="328" y="1120" class="n" text-anchor="middle">12</text>
+<text x="348" y="1121" class="ti" text-anchor="start">Finalize</text>
+<text x="320" y="1138" class="s" text-anchor="start">aggregate per-host results · audit events</text>
+<text x="320" y="1152" class="s dim" text-anchor="start">status: completed · dry_run_completed · safety_paused</text>
+<rect x="800" y="1100" width="276" height="50" rx="7" fill="#f59e0b" fill-opacity=".16" stroke="#f59e0b" stroke-width="1.4"/><rect x="800" y="1100" width="6" height="50" rx="3" fill="#f59e0b"/>
+<text x="816" y="1121" class="tt" fill="#f59e0b">safety_paused</text>
+<text x="816" y="1139" class="s" text-anchor="start">failure ratio over FLEET_FAILURE_THRESHOLD</text>
+<path d="M760,1125.0 L798,1125" fill="none" stroke="#f59e0b" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#a-amber)"/>
+<rect x="24" y="346" width="240" height="62" rx="8" fill="#06b6d4" fill-opacity=".10" stroke="#06b6d4" stroke-width="1.4"/><rect x="24" y="346" width="6" height="62" rx="3" fill="#06b6d4"/>
+<text x="42" y="370" class="ti" text-anchor="start">reports/incoming + archive</text>
+<text x="42" y="389" class="s" text-anchor="start">dated snapshot used by the run</text>
+<rect x="24" y="434" width="240" height="150" rx="8" fill="#8b5cf6" fill-opacity=".10" stroke="#8b5cf6" stroke-width="1.4"/><rect x="24" y="434" width="6" height="150" rx="3" fill="#8b5cf6"/>
+<text x="42" y="458" class="ti" text-anchor="start">Database</text>
+<text x="42" y="477" class="s" text-anchor="start">SQLite (WAL) / PostgreSQL</text>
+<text x="42" y="494" class="s" text-anchor="start">servers · executions</text>
+<text x="42" y="511" class="s" text-anchor="start">agent_checks pre / post</text>
+<text x="42" y="528" class="s" text-anchor="start">remediations · audit_logs</text>
+<rect x="24" y="636" width="240" height="62" rx="8" fill="#14b8a6" fill-opacity=".10" stroke="#14b8a6" stroke-width="1.4"/><rect x="24" y="636" width="6" height="62" rx="3" fill="#14b8a6"/>
+<text x="42" y="660" class="ti" text-anchor="start">secrets/</text>
+<text x="42" y="679" class="s" text-anchor="start">credentials.json (10 sets) · known_hosts</text>
+<rect x="24" y="900" width="240" height="62" rx="8" fill="#f97316" fill-opacity=".10" stroke="#f97316" stroke-width="1.4"/><rect x="24" y="900" width="6" height="62" rx="3" fill="#f97316"/>
+<text x="42" y="924" class="ti" text-anchor="start">Catalog &amp; payloads</text>
+<text x="42" y="943" class="s" text-anchor="start">21 playbooks · RPMs · securitytools.env</text>
+<path d="M264,377 L298,377" fill="none" stroke="#06b6d4" stroke-width="1.8" marker-end="url(#a-cyan)"/>
+<path d="M264,465 L298,465" fill="none" stroke="#8b5cf6" stroke-width="1.8" marker-end="url(#a-violet)"/>
+<path d="M264,553 L298,553" fill="none" stroke="#8b5cf6" stroke-width="1.8" marker-end="url(#a-violet)"/>
+<path d="M264,667 L284,667" fill="none" stroke="#14b8a6" stroke-width="1.8" marker-end="url(#a-teal)"/>
+<path d="M264,931 L284,931" fill="none" stroke="#f97316" stroke-width="1.8" marker-end="url(#a-orange)"/>
+<rect x="40" y="1196" width="330" height="74" rx="8" fill="#ec4899" fill-opacity=".16" stroke="#ec4899" stroke-width="1.4"/><rect x="40" y="1196" width="6" height="74" rx="3" fill="#ec4899"/>
+<text x="60" y="1222" class="ti" text-anchor="start">Excel report</text>
+<text x="60" y="1242" class="s" text-anchor="start">reports/generated/EXEC-*.xlsx</text>
+<text x="60" y="1259" class="s dim" text-anchor="start">6 sheets · per-agent pre / post</text>
+<rect x="385" y="1196" width="330" height="74" rx="8" fill="#ec4899" fill-opacity=".16" stroke="#ec4899" stroke-width="1.4"/><rect x="385" y="1196" width="6" height="74" rx="3" fill="#ec4899"/>
+<text x="405" y="1222" class="ti" text-anchor="start">Notification</text>
+<text x="405" y="1242" class="s" text-anchor="start">notifications/sender.py</text>
+<text x="405" y="1259" class="s dim" text-anchor="start">execution summary</text>
+<rect x="730" y="1196" width="330" height="74" rx="8" fill="#ec4899" fill-opacity=".16" stroke="#ec4899" stroke-width="1.4"/><rect x="730" y="1196" width="6" height="74" rx="3" fill="#ec4899"/>
+<text x="750" y="1222" class="ti" text-anchor="start">Live dashboard</text>
+<text x="750" y="1242" class="s" text-anchor="start">publish_live_status.py → status.json</text>
+<text x="750" y="1259" class="s dim" text-anchor="start">website #live · every 10 s</text>
+<text x="52" y="1190" class="lane" text-anchor="start">13  OUTPUTS</text>
+<path d="M530.0,1156 C530.0,1175.0 205,1175.0 205,1194" fill="none" stroke="#ec4899" stroke-width="1.8" marker-end="url(#a-pink)"/>
+<path d="M530.0,1156 C530.0,1175.0 550,1175.0 550,1194" fill="none" stroke="#ec4899" stroke-width="1.8" marker-end="url(#a-pink)"/>
+<path d="M530.0,1156 C530.0,1175.0 895,1175.0 895,1194" fill="none" stroke="#ec4899" stroke-width="1.8" marker-end="url(#a-pink)"/>
+<text x="550.0" y="1290" class="cap" text-anchor="middle">Arrows to the right are terminal outcomes for that host or run; every host ends in exactly one status.</text>
+</svg>

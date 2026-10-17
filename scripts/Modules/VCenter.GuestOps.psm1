@@ -33,7 +33,14 @@ function Connect-PatchVCenter {
 
     $sessionKey = $Server.ToLowerInvariant()
     if ($script:PatchVCenterSessions.ContainsKey($sessionKey)) {
-        return $script:PatchVCenterSessions[$sessionKey]
+        $cached = $script:PatchVCenterSessions[$sessionKey]
+        if ($cached -and $cached.IsConnected) {
+            return $cached
+        }
+        $script:PatchVCenterSessions.Remove($sessionKey) | Out-Null
+        if ($cached -and $cached.Name) {
+            $script:PatchVCenterSessions.Remove($cached.Name.ToLowerInvariant()) | Out-Null
+        }
     }
 
     $session = Connect-VIServer -Server $Server -Credential $Credential -Force -ErrorAction Stop
@@ -165,13 +172,25 @@ function Wait-VMToolsReady {
     throw "VMware Tools/guest readiness timed out after $TimeoutSeconds seconds for '$($VM.Name)'."
 }
 
+function Test-GuestOperationRetryable {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)]$ErrorRecord)
+
+    $message = $ErrorRecord.Exception.Message
+    $typeName = $ErrorRecord.Exception.GetType().FullName
+    ($typeName -match 'GuestOperationsUnavailable|GuestOperationsFault') -or
+        ($message -match '3016|guest operations agent|could not be contacted|Tools are not running|Guest operations are disabled')
+}
+
 function Invoke-GuestPowerShell {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]$VM,
         [Parameter(Mandatory)][pscredential]$GuestCredential,
         [Parameter(Mandatory)][string]$ScriptText,
-        [switch]$RunAsync
+        [switch]$RunAsync,
+        [ValidateRange(1, 10)][int]$MaxAttempts = 3,
+        [ValidateRange(1, 120)][int]$RetryDelaySeconds = 15
     )
 
     $invokeParams = @{
@@ -185,12 +204,22 @@ function Invoke-GuestPowerShell {
         $invokeParams.RunAsync = $true
     }
 
-    $result = Invoke-VMScript @invokeParams
-    if (-not $RunAsync -and $result.ExitCode -ne 0) {
-        throw "Guest operation exited with code $($result.ExitCode): $($result.ScriptOutput)"
+    for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+        try {
+            $result = Invoke-VMScript @invokeParams
+            if (-not $RunAsync -and $result.ExitCode -ne 0) {
+                throw "Guest operation exited with code $($result.ExitCode): $($result.ScriptOutput)"
+            }
+            if ($RunAsync) { return $result }
+            return $result.ScriptOutput
+        }
+        catch {
+            if ($attempt -ge $MaxAttempts -or -not (Test-GuestOperationRetryable -ErrorRecord $_)) {
+                throw
+            }
+            Start-Sleep -Seconds ($RetryDelaySeconds * $attempt)
+        }
     }
-    if ($RunAsync) { return $result }
-    $result.ScriptOutput
 }
 
 function Enable-GuestLocalAdminTokenPolicy {
@@ -230,6 +259,87 @@ if ($current -ne 1) {
     }
 }
 
+function Repair-GuestIPv4Networking {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]$VM,
+        [Parameter(Mandatory)][pscredential]$GuestCredential,
+        [string]$ExpectedIPv4 = ''
+    )
+
+    $escapedExpected = $ExpectedIPv4.Replace("'", "''")
+    $output = Invoke-GuestPowerShell -VM $VM -GuestCredential $GuestCredential -ScriptText @"
+`$ErrorActionPreference = 'SilentlyContinue'
+`$expected = '$escapedExpected'
+`$primary = Get-NetAdapter | Where-Object { `$_.Status -ne 'Disabled' -and `$_.InterfaceDescription -notmatch 'Loopback' } | Select-Object -First 1
+if (-not `$primary) { Write-Output '{""status"":""NO_ADAPTER""}'; return }
+`$alias = `$primary.Name
+Get-NetIPAddress -InterfaceAlias `$alias -AddressFamily IPv4 | Where-Object { `$_.IPAddress -like '169.254.*' } | ForEach-Object {
+    Remove-NetIPAddress -InterfaceIndex `$_.InterfaceIndex -IPAddress `$_.IPAddress -Confirm:`$false
+}
+`$octets = `$expected -split '\.'
+`$gateway = if (`$octets.Count -eq 4) { "`$(`$octets[0]).`$(`$octets[1]).`$(`$octets[2]).1" } else { `$null }
+`$dns = if (`$expected -like '10.22.*') { @('10.50.13.50', '10.128.167.20') } else { @('10.128.32.16', '10.128.32.17') }
+Set-DnsClientServerAddress -InterfaceAlias `$alias -ServerAddresses `$dns
+Get-NetRoute -DestinationPrefix '0.0.0.0/0' -PolicyStore PersistentStore -ErrorAction SilentlyContinue |
+    Where-Object { `$gateway -and `$_.NextHop -ne `$gateway } |
+    ForEach-Object { Remove-NetRoute -InputObject `$_ -Confirm:`$false -ErrorAction SilentlyContinue }
+`$routeExe = Join-Path `$env:SystemRoot 'System32\route.exe'
+& `$routeExe delete 0.0.0.0 mask 0.0.0.0 10.128.167.254 | Out-Null
+if (`$gateway) {
+    if (-not (Get-NetRoute -DestinationPrefix '0.0.0.0/0' -NextHop `$gateway -ErrorAction SilentlyContinue)) {
+        New-NetRoute -DestinationPrefix '0.0.0.0/0' -InterfaceAlias `$alias -NextHop `$gateway -RouteMetric 1 -PolicyStore PersistentStore -ErrorAction SilentlyContinue | Out-Null
+    }
+    if (-not (Get-NetRoute -DestinationPrefix '0.0.0.0/0' -NextHop `$gateway -ErrorAction SilentlyContinue)) {
+        New-NetRoute -DestinationPrefix '0.0.0.0/0' -InterfaceAlias `$alias -NextHop `$gateway -RouteMetric 1 -ErrorAction SilentlyContinue | Out-Null
+    }
+}
+Set-NetIPInterface -InterfaceAlias `$alias -InterfaceMetric 1 -ErrorAction SilentlyContinue
+Start-Sleep -Seconds 5
+`$dnsOk = `$false
+try { `$null = Resolve-DnsName www.msftconnecttest.com -ErrorAction Stop; `$dnsOk = `$true } catch {}
+`$pingGw = if (`$gateway) { (Test-Connection -ComputerName `$gateway -Count 1 -Quiet) } else { `$false }
+@{ status = 'OK'; adapter = `$alias; expected = `$expected; gateway = `$gateway; dnsOk = `$dnsOk; pingGateway = `$pingGw; addresses = ((Get-NetIPAddress -InterfaceAlias `$alias -AddressFamily IPv4 | Select-Object -ExpandProperty IPAddress) -join ',') } | ConvertTo-Json -Compress
+"@
+    $trimmed = $output.Trim()
+    if ($trimmed -match '^\{') { return ($trimmed | ConvertFrom-Json) }
+    return [pscustomobject]@{ status = 'Unknown'; raw = $trimmed }
+}
+
+function Reset-GuestWindowsUpdateConnectivity {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]$VM,
+        [Parameter(Mandatory)][pscredential]$GuestCredential,
+        [string]$ExpectedIPv4 = ''
+    )
+
+    if ($ExpectedIPv4) {
+        try {
+            Repair-GuestIPv4Networking -VM $VM -GuestCredential $GuestCredential -ExpectedIPv4 $ExpectedIPv4 | Out-Null
+        }
+        catch {
+            # Do not fail the patch worker if optional network tuning errors.
+        }
+    }
+
+    Invoke-GuestPowerShell -VM $VM -GuestCredential $GuestCredential -ScriptText @'
+$ErrorActionPreference = 'SilentlyContinue'
+& "$env:SystemRoot\System32\netsh.exe" winhttp reset proxy | Out-Null
+& "$env:SystemRoot\System32\netsh.exe" winhttp import proxy source=ie | Out-Null
+$auKey = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'
+if (Test-Path -LiteralPath $auKey) {
+    Remove-ItemProperty -LiteralPath $auKey -Name UseWUServer -ErrorAction SilentlyContinue
+    Remove-ItemProperty -LiteralPath $auKey -Name WUStatusServer -ErrorAction SilentlyContinue
+    Remove-ItemProperty -LiteralPath $auKey -Name WUServer -ErrorAction SilentlyContinue
+}
+foreach ($serviceName in @('wuauserv', 'bits', 'cryptsvc')) {
+    Restart-Service -Name $serviceName -ErrorAction SilentlyContinue
+}
+Start-Sleep -Seconds 10
+'@ | Out-Null
+}
+
 function Test-GuestWindowsUpdateComAvailable {
     [CmdletBinding()]
     param(
@@ -245,8 +355,6 @@ try {
     `$session = New-Object -ComObject Microsoft.Update.Session
     `$session.ClientApplicationID = 'Enterprise Windows Patch Automation Framework'
     `$null = New-Object -ComObject Microsoft.Update.SystemInfo
-    `$searcher = `$session.CreateUpdateSearcher()
-    `$null = `$searcher.Search('$escapedCriteria').Updates
     Write-Output 'OK'
 }
 catch {
@@ -416,6 +524,10 @@ function Repair-PatchVCenterSession {
         [ValidateRange(30, 3600)][int]$WebOperationTimeoutSeconds = 300
     )
 
+    $sessionKey = $Server.ToLowerInvariant()
+    if ($script:PatchVCenterSessions.ContainsKey($sessionKey)) {
+        $script:PatchVCenterSessions.Remove($sessionKey) | Out-Null
+    }
     try {
         Connect-PatchVCenter -Server $Server -Credential $Credential -IgnoreInvalidCertificate $IgnoreInvalidCertificate `
             -WebOperationTimeoutSeconds $WebOperationTimeoutSeconds | Out-Null
@@ -651,22 +763,8 @@ function Invoke-GuestWindowsUpdateRepair {
             -LocalDirectory $LocalDirectory
     }
 
-    try {
-        return Invoke-GuestWindowsUpdateRepairSync -VM $VM -GuestCredential $GuestCredential `
-            -GuestScriptPath $GuestScriptPath -GuestWorkingDirectory $GuestWorkingDirectory `
-            -LocalDirectory $LocalDirectory
-    }
-    catch {
-        # Fall back to detached worker for environments where sync repair fails.
-    }
-
-    $repairHandle = Start-GuestRepairJob -VM $VM -GuestCredential $GuestCredential `
-        -GuestScriptPath $GuestScriptPath -GuestWorkingDirectory $GuestWorkingDirectory
-    Wait-GuestRepairJob -VM $VM -GuestCredential $GuestCredential -RepairHandle $repairHandle `
-        -Server $Server -VCenterCredential $VCenterCredential -IgnoreInvalidCertificate $IgnoreInvalidCertificate `
-        -WebOperationTimeoutSeconds $WebOperationTimeoutSeconds -TimeoutSeconds $TimeoutSeconds `
-        -PollSeconds $PollSeconds
-    Copy-GuestRepairArtifacts -VM $VM -GuestCredential $GuestCredential -RepairHandle $repairHandle `
+    return Invoke-GuestWindowsUpdateRepairSync -VM $VM -GuestCredential $GuestCredential `
+        -GuestScriptPath $GuestScriptPath -GuestWorkingDirectory $GuestWorkingDirectory `
         -LocalDirectory $LocalDirectory
 }
 
@@ -701,17 +799,45 @@ function Restart-PatchVMGuest {
         [ValidateRange(0, 600)][int]$PostRebootWarmUpSeconds = 90
     )
 
+    $rebootIssued = $false
     try {
-        Invoke-GuestPowerShell -VM $VM -GuestCredential $GuestCredential -ScriptText `
-            'Restart-Computer -Force' | Out-Null
+        Restart-VMGuest -VM $VM -Confirm:$false -ErrorAction Stop | Out-Null
+        $rebootIssued = $true
     }
     catch {
-        # Guest Operations commonly loses the response while Windows is shutting down.
+        try {
+            Invoke-GuestPowerShell -VM $VM -GuestCredential $GuestCredential -ScriptText `
+                'Restart-Computer -Force' | Out-Null
+            $rebootIssued = $true
+        }
+        catch {
+            # Guest Operations commonly loses the response while Windows is shutting down.
+            $rebootIssued = $true
+        }
     }
+
+    if (-not $rebootIssued) {
+        throw "Failed to initiate guest reboot for '$($VM.Name)'."
+    }
+
     Wait-VMToolsReady -VM $VM -Server $Server -TimeoutSeconds $TimeoutSeconds -PollSeconds $PollSeconds -RequireObservedNotReady
 
+    $freshVm = Get-VM -Id $VM.Id -Server $Server -ErrorAction Stop
     if ($PostRebootWarmUpSeconds -gt 0) {
-        Invoke-GuestPostRebootWarmUp -VM $VM -GuestCredential $GuestCredential -WarmUpSeconds $PostRebootWarmUpSeconds
+        $warmUpAttempts = 3
+        for ($attempt = 1; $attempt -le $warmUpAttempts; $attempt++) {
+            try {
+                Invoke-GuestPostRebootWarmUp -VM $freshVm -GuestCredential $GuestCredential `
+                    -WarmUpSeconds $PostRebootWarmUpSeconds
+                break
+            }
+            catch {
+                if ($attempt -ge $warmUpAttempts) { throw }
+                Start-Sleep -Seconds 30
+                $freshVm = Get-VM -Id $VM.Id -Server $Server -ErrorAction Stop
+                Wait-VMToolsReady -VM $freshVm -Server $Server -TimeoutSeconds 120 -PollSeconds $PollSeconds
+            }
+        }
     }
 }
 
@@ -729,8 +855,92 @@ foreach (`$serviceName in @('cryptsvc','bits','wuauserv','msiserver')) {
     Set-Service -Name `$serviceName -StartupType Manual
     Start-Service -Name `$serviceName
 }
-Start-Sleep -Seconds $WarmUpSeconds
 "@ | Out-Null
+
+    # Wait on the orchestrator side so we do not hold an Invoke-VMScript session open
+    # for minutes (avoids VIX 3016 disconnects during post-reboot warm-up).
+    if ($WarmUpSeconds -gt 0) {
+        Start-Sleep -Seconds $WarmUpSeconds
+    }
+}
+
+function Get-GuestOsBuildNumbers {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]$VM,
+        [Parameter(Mandatory)][pscredential]$GuestCredential
+    )
+
+    $output = Invoke-GuestPowerShell -VM $VM -GuestCredential $GuestCredential -ScriptText @'
+$v = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
+[pscustomobject]@{ build = [string]$v.CurrentBuild; ubr = [int]$v.UBR } | ConvertTo-Json -Compress
+'@
+    $parsed = $output.Trim() | ConvertFrom-Json
+    [pscustomobject]@{
+        Build = [string]$parsed.build
+        Ubr   = [int]$parsed.ubr
+        Full  = "{0}.{1}" -f [string]$parsed.build, [int]$parsed.ubr
+    }
+}
+
+function Get-OfflineCumulativeMsuPath {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$BuildFamily,
+        [Parameter(Mandatory)]$FallbackConfig,
+        [Parameter(Mandatory)][string]$CacheDirectory
+    )
+
+    if (-not $FallbackConfig.$BuildFamily) {
+        throw "No offline cumulative fallback configured for build family '$BuildFamily'."
+    }
+    $entry = $FallbackConfig.$BuildFamily
+    New-Item -ItemType Directory -Path $CacheDirectory -Force | Out-Null
+    $localPath = Join-Path $CacheDirectory ([string]$entry.fileName)
+    if (-not (Test-Path -LiteralPath $localPath -PathType Leaf)) {
+        $url = [string]$entry.msuUrl
+        Write-Verbose "Downloading offline MSU from $url"
+        Invoke-WebRequest -Uri $url -OutFile $localPath -UseBasicParsing
+    }
+    return $localPath
+}
+
+function Invoke-GuestOfflineCumulativeUpdate {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]$VM,
+        [Parameter(Mandatory)][pscredential]$GuestCredential,
+        [Parameter(Mandatory)][string]$GuestWorkingDirectory,
+        [Parameter(Mandatory)][string]$LocalMsuPath,
+        [Parameter(Mandatory)][string]$GuestInstallScriptPath,
+        [Parameter(Mandatory)][string]$LocalDirectory,
+        [int]$MinimumUbr = 5074
+    )
+
+    $guestRoot = $GuestWorkingDirectory.TrimEnd('\', '/')
+    $guestMsu = "$guestRoot\offline-cumulative.msu"
+    $guestScript = "$guestRoot\Install-OfflineCumulativeUpdate.ps1"
+    $resultPath = "$guestRoot\offline-result.json"
+    $logPath = "$guestRoot\offline-log.jsonl"
+
+    Copy-PatchScriptToGuest -VM $VM -GuestCredential $GuestCredential `
+        -Source $GuestInstallScriptPath -Destination $guestScript
+    Copy-VMGuestFile -VM $VM -GuestCredential $GuestCredential -Source $LocalMsuPath `
+        -Destination $guestMsu -LocalToGuest -Force | Out-Null
+
+    $escapedScript = $guestScript.Replace("'", "''")
+    $escapedMsu = $guestMsu.Replace("'", "''")
+    $escapedResult = $resultPath.Replace("'", "''")
+    $escapedLog = $logPath.Replace("'", "''")
+    Invoke-GuestPowerShell -VM $VM -GuestCredential $GuestCredential -ScriptText @"
+& '$escapedScript' -MsuPath '$escapedMsu' -ResultPath '$escapedResult' -LogPath '$escapedLog' -MinimumUbr $MinimumUbr
+"@ | Out-Null
+
+    New-Item -ItemType Directory -Path $LocalDirectory -Force | Out-Null
+    $localResult = Join-Path $LocalDirectory 'offline-result.json'
+    Copy-VMGuestFile -VM $VM -GuestCredential $GuestCredential -Source $resultPath `
+        -Destination $localResult -GuestToLocal -Force | Out-Null
+    Get-Content -LiteralPath $localResult -Raw | ConvertFrom-Json -Depth 10
 }
 
 function Test-GuestPatchConvergence {
@@ -745,25 +955,33 @@ function Test-GuestPatchConvergence {
     $output = Invoke-GuestPowerShell -VM $VM -GuestCredential $GuestCredential -ScriptText @"
 `$ErrorActionPreference = 'Stop'
 `$criteria = '$escapedCriteria'
-`$session = New-Object -ComObject Microsoft.Update.Session
-`$searcher = `$session.CreateUpdateSearcher()
-`$result = `$searcher.Search(`$criteria)
-`$info = New-Object -ComObject Microsoft.Update.SystemInfo
+`$searchError = ''
+`$pendingCount = -1
+`$rebootRequired = `$false
+`$registryRebootPending = `$false
+try {
+    `$session = New-Object -ComObject Microsoft.Update.Session
+    `$searcher = `$session.CreateUpdateSearcher()
+    `$result = `$searcher.Search(`$criteria)
+    `$pendingCount = [int]`$result.Updates.Count
+    `$info = New-Object -ComObject Microsoft.Update.SystemInfo
+    `$rebootRequired = [bool]`$info.RebootRequired
+} catch {
+    `$searchError = `$_.Exception.Message
+}
 `$registryRebootPending = @(
     'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired',
     'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending',
     'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\PostRebootReporting',
     'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\PendingFileRenameOperations'
 ) | Where-Object { Test-Path -LiteralPath `$_ }
-`$pendingCount = [int]`$result.Updates.Count
-# Pending count and registry reboot keys are authoritative. SystemInfo.RebootRequired can remain
-# stale after updates are fully installed and causes false MaxCyclesExceeded / reboot-only loops.
 `$isCompliant = (`$pendingCount -eq 0) -and (`$registryRebootPending.Count -eq 0)
 [pscustomobject]@{
     pendingUpdates = `$pendingCount
-    rebootRequired = [bool]`$info.RebootRequired
+    rebootRequired = `$rebootRequired
     registryRebootPending = (`$registryRebootPending.Count -gt 0)
     isCompliant = `$isCompliant
+    searchError = `$searchError
 } | ConvertTo-Json -Compress
 "@
 
@@ -773,12 +991,13 @@ function Test-GuestPatchConvergence {
         RebootRequired = [bool]$parsed.rebootRequired
         RegistryRebootPending = [bool]$parsed.registryRebootPending
         IsCompliant = [bool]$parsed.isCompliant
+        SearchError = [string]$parsed.searchError
     }
 }
 
 Export-ModuleMember -Function Initialize-PowerCLISession, Connect-PatchVCenter, Get-PatchVCenterSession,
     Repair-PatchVCenterSession, Get-PatchVMInventory, Test-GuestCredential, Get-UniquePatchVM, Test-VMToolsReady,
-    Wait-VMToolsReady, Invoke-GuestPowerShell, Enable-GuestLocalAdminTokenPolicy, Test-GuestWindowsUpdateComAvailable,
+    Wait-VMToolsReady, Invoke-GuestPowerShell, Repair-GuestIPv4Networking, Reset-GuestWindowsUpdateConnectivity, Get-GuestOsBuildNumbers, Get-OfflineCumulativeMsuPath, Invoke-GuestOfflineCumulativeUpdate, Enable-GuestLocalAdminTokenPolicy, Test-GuestWindowsUpdateComAvailable,
     Initialize-GuestPatchWorkspace, Reset-GuestPatchWorkspace, Copy-PatchScriptToGuest, Start-GuestPatchCycle,
     Invoke-GuestPatchCycleSync, Wait-GuestPatchCycle, Start-GuestRepairJob, Wait-GuestRepairJob, Copy-GuestRepairArtifacts,
     Invoke-GuestWindowsUpdateRepairSync, Invoke-GuestWindowsUpdateRepair, Copy-GuestPatchArtifacts, Restart-PatchVMGuest, Invoke-GuestPostRebootWarmUp, Test-GuestPatchConvergence

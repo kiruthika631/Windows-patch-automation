@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Self_healing — Tanium Fleet Health &amp; Remediation</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+    <nav>
+  <div class="brand"><b>Self_healing</b><span>Tanium fleet health &amp; remediation</span></div>
+  <div class="grp">Live</div>
+  <a class="nav-live" href="#live">● Live run</a>
+  <a class="nav-anomaly" href="#anomaly-exec">● Anomaly execution</a>
+  <a href="#live-ssh">SSH access</a>
+  <a href="#live-fleet">Issues found (table)</a>
+  <a href="#live-issues">Issues &amp; fixes</a>
+  <a href="#live-agents">Per-agent health</a>
+  <a href="#live-actions">Remediation actions</a>
+  <a href="#live-recent">Recent hosts</a>
+  <a class="nav-dl" href="#excel">↓ Download Excel</a>
+  <div class="grp">Understand</div>
+      <a href="#overview">Overview</a>
+  <a href="#does">What it does</a>
+  <a href="#delivery">Report delivery</a>
+  <a href="#stack">Tech stack</a>
+  <div class="grp">Architecture</div>
+  <a href="#arch">System architecture</a>
+  <a href="#pipeline-color">Full pipeline (colour)</a>
+  <a href="#layers">Component layers</a>
+  <a href="#calendar">Monthly timeline</a>
+  <a href="#flow">End-to-end run flow</a>
+  <a href="#hostflow">Per-host decision flow</a>
+  <a href="#ssh">SSH credential loop</a>
+  <a href="#data">Data &amp; state paths</a>
+  <a href="#statuses">Status vocabulary</a>
+  <a href="#mechanism">Execution model</a>
+  <div class="grp">Reference</div>
+      <a href="#files">File catalog</a>
+  <a href="#scripts">Scripts</a>
+  <a href="#config">Configuration</a>
+  <a href="#excel">Excel output</a>
+  <div class="grp">Run it</div>
+  <a href="#setup">One-time setup</a>
+  <a href="#dryrun">Dry-run</a>
+  <a href="#production">Production</a>
+  <a href="#website">Open this site</a>
+  <div class="grp">Operate</div>
+  <a href="#fixes-1004">Fixes 2026-10-04</a>
+  <a href="#trouble">Troubleshooting</a>
+  <a href="#security">Security</a>
+  <a class="dl-btn" href="guide.pdf" download="Self_healing_Platform_Guide.pdf">Download Guide (PDF)</a>
+    </nav>
+  <main>
+<h1>Self_healing</h1>
+<p class="lede">Autonomous Tanium Linux fleet operations — ingest agent status, SSH health-check with up to ten credential profiles, remediate Tanium / Falcon / Arc / rsyslog via Ansible, deliver auditable Excel from the orchestrator.</p>
+<p class="meta">~807 hosts · Paramiko 3 + OpenSSH · 21 Ansible playbooks · Asia/Kolkata calendar</p>
+<a class="hero-dl" href="guide.pdf" download="Self_healing_Platform_Guide.pdf">Download the full guide as PDF</a>
+
+<h2 id="live">Live run <span id="live-badge" class="tag">loading…</span></h2>
+<p class="meta" id="live-meta">Waiting for status.json…</p>
+<div class="progress"><div id="live-bar"></div></div>
+<p class="meta" id="live-progtext"></p>
+<div class="kpis">
+  <div class="kpi"><span>Machines in list</span><b id="k-total">–</b></div>
+  <div class="kpi"><span>Processed</span><b id="k-processed">–</b></div>
+  <div class="kpi"><span>SSH authenticated</span><b id="k-ssh" class="ok">–</b></div>
+  <div class="kpi"><span>Fleet healthy (ACTIVE-first)</span><b id="k-active-healthy" class="ok">–</b></div>
+  <div class="kpi"><span>Already OK at SSH pre-check</span><b id="k-healthy" title="Processed hosts only — strict live pre-check before remediation">–</b></div>
+  <div class="kpi"><span>Issues found</span><b id="k-found" class="warn">–</b></div>
+  <div class="kpi"><span>Issues fixed</span><b id="k-fixed" class="ok">–</b></div>
+  <div class="kpi"><span>Agent issues still open</span><b id="k-remaining" class="warn">–</b></div>
+  <div class="kpi"><span>Failed remediations (actions)</span><b id="k-failed" class="bad">–</b></div>
+</div>
+<div class="kpis kpis-secondary">
+  <div class="kpi"><span>SSH issues (auth + unreachable)</span><b id="k-ssh-issues" class="warn">–</b></div>
+  <div class="kpi"><span>Unreachable (TCP/route)</span><b id="k-unreachable" class="bad">–</b></div>
+  <div class="kpi"><span>Auth failed</span><b id="k-auth-failed" class="warn">–</b></div>
+  <div class="kpi"><span>Sudo blocked</span><b id="k-sudo" class="warn">–</b></div>
+  <div class="kpi"><span>Other policy blocks</span><b id="k-policy-other" class="warn">–</b></div>
+  <div class="kpi"><span>Not processed yet</span><b id="k-pending" class="dim">–</b></div>
+</div>
+<div class="report-dl-row" id="live-report-row">
+  <p class="meta" id="live-report-meta">Excel report will appear when hosts are processed.</p>
+  <a id="live-report-dl" class="hero-dl" href="#" download hidden>Download Excel report</a>
+</div>
+
+<h3 id="live-fleet">Issues found — fleet table</h3>
+<p>Same columns as the Excel <b>Fleet Status</b> sheet: every host from the input inventory (processed + queued) with human-readable pre/post per tool (active, connected, not installed, failed, …) and a <b>Comments</b> column. Search matches hostname, IP, display labels, and comments.</p>
+<div class="search-row">
+  <label for="live-fleet-search">Search hosts, IP, tool status, comments…</label>
+  <input type="search" id="live-fleet-search" placeholder="e.g. cred-09, 10.22, not installed, disconnected, SENTINEL_INSTALL failed" autocomplete="off">
+  <span class="meta" id="live-fleet-count"></span>
+</div>
+<div class="table-scroll">
+<table id="live-fleet-table">
+<thead><tr>
+  <th>Execution</th><th>Hostname</th><th>IP</th><th>OS</th><th>Cred</th><th>SSH</th>
+  <th>Tanium pre</th><th>Tanium post</th>
+  <th>Sentinel pre</th><th>Sentinel post</th>
+  <th>CS pre</th><th>CS post</th>
+  <th>Rsyslog pre</th><th>Rsyslog post</th>
+  <th>Arc pre</th><th>Arc post</th>
+  <th>Overall pre</th><th>Overall post</th><th>Comments</th>
+</tr></thead>
+<tbody id="live-fleet-body"></tbody>
+</table>
+</div>
+
+<h3 id="live-ssh">SSH access</h3>
+<p class="meta"><b>Queued</b> means not processed yet in this run — not unreachable. <b>Unreachable</b> is only <code>SSH_FAILED</code> (TCP/route). <b>Auth failed</b> means SSH worked but credentials did not.</p>
+<div class="stack" id="live-sshbar"></div>
+<table><tbody id="live-sshtable"></tbody></table>
+<h4>Unreachable / auth failed — verified cause</h4>
+<p class="meta" id="live-ssh-vcenter-note"></p>
+<table><thead><tr><th>Host</th><th>Tanium IP</th><th>Status</th><th>Class</th><th>Cause (vCenter + SSH)</th></tr></thead><tbody id="live-sshcause"></tbody></table>
+
+<h3 id="live-issues">Issues &amp; fixes</h3>
+<p>An <b>issue</b> is one agent on one host that was not healthy at pre-check (missing, inactive, failed, not reporting, unhealthy). It counts as <b>fixed</b> only when post-validation after remediation shows it healthy.</p>
+<p><b>BLOCKED_BY_POLICY</b> means the platform deliberately did not run (or could not run) Ansible for that host: missing install payloads on the orchestrator (Sentinel AMA, Arc installer), <b>sudo</b> not available for the SSH user, Falcon/Tanium <b>wrong OS build</b> (manual reinstall with maintenance token), or no catalog action for that agent state. <b>REMEDIATION_FAILED</b> means Ansible ran but post-check still shows a problem (playbook error, Arc connect failure, or agent still unhealthy — e.g. CrowdStrike AID not registered yet). Hover the <b>Details</b> column in the fleet table for the exact reason.</p>
+<table><thead><tr><th>Measure</th><th>Count</th></tr></thead><tbody id="live-issuetable"></tbody></table>
+
+<h3 id="live-agents">Per-agent health</h3>
+<table><thead><tr><th>Agent</th><th>Healthy (pre)</th><th>Issues found</th><th>Fixed</th><th>Pre-check breakdown</th></tr></thead><tbody id="live-agenttable"></tbody></table>
+
+<h3 id="live-actions">Remediation actions</h3>
+<p class="meta"><b>Executed</b> = Ansible finished OK for that catalog action on a host. <b>Failed</b> = that action run failed (SSH drop, package missing, post-check still bad)—retry after fixing root cause. <b>Issues fixed</b> (above) counts agents that reached <code>HEALTHY</code> on post-check, not executed rows. 100% executed does not guarantee 100% healthy (e.g. Falcon wrong EL build).</p>
+<table><thead><tr><th>Action</th><th>Executed</th><th>Failed</th><th>Planned (dry-run)</th><th>Blocked</th></tr></thead><tbody id="live-actiontable"></tbody></table>
+
+<h3 id="live-recent">Recent hosts</h3>
+<table><thead><tr><th>Host</th><th>IP</th><th>SSH</th><th>Pre</th><th>Post</th><th>Cred</th><th>Time (IST)</th></tr></thead><tbody id="live-recenttable"></tbody></table>
+
+<h3>Top failure reasons</h3>
+<table><thead><tr><th>Reason</th><th>Hosts</th></tr></thead><tbody id="live-failtable"></tbody></table>
+<p class="meta" id="live-refresh-note">Live data from <code>status.json</code> — browser polls every few seconds; publisher <code>publish_live_status.py --watch 5</code> runs during executions (5 s while RUNNING, 10 s when idle). Overall post = dashboard view; Excel Comments = audit detail. Full-screen: <a href="live.html">live.html</a>.</p>
+
+<h2 id="anomaly-exec">Anomaly execution <span id="anomaly-badge" class="tag">loading…</span></h2>
+<p class="meta" id="anomaly-meta">Tanium <code>linux servers anomalies.csv</code> subset — planned CS/Arc/rsyslog/Tanium actions plus pre→post movements on the same execution (<code>EXEC-2026-10-05-002</code>).</p>
+<div class="progress"><div id="anomaly-bar"></div></div>
+<p class="meta" id="anomaly-progtext"></p>
+<div class="kpis">
+  <div class="kpi"><span>Anomaly hosts (CSV)</span><b id="ka-total">–</b></div>
+  <div class="kpi"><span>Processed in execution</span><b id="ka-processed">–</b></div>
+  <div class="kpi"><span>Healthy post-check</span><b id="ka-healthy" class="ok">–</b></div>
+  <div class="kpi"><span>Improved to compliant</span><b id="ka-improved" class="ok">–</b></div>
+  <div class="kpi"><span>Still pending</span><b id="ka-pending" class="dim">–</b></div>
+  <div class="kpi"><span>Remediation failed</span><b id="ka-failed" class="bad">–</b></div>
+  <div class="kpi"><span>Non-Stryker CID rows</span><b id="ka-non-stryker" class="warn">–</b></div>
+  <div class="kpi"><span>Blocked by policy</span><b id="ka-blocked" class="warn">–</b></div>
+</div>
+<p class="meta" id="anomaly-plan-meta"></p>
+<a id="anomaly-plan-dl" class="hero-dl" href="#" download hidden>Download anomaly remediation plan (CSV)</a>
+
+<h3 id="anomaly-movements">Movements (pre → post)</h3>
+<p class="meta">Hosts where overall or per-agent status changed after SSH remediation, or still queued for the dedicated anomaly pass (<code>run_tanium_anomalies_csv.py --production</code>).</p>
+<div class="table-scroll">
+<table>
+<thead><tr>
+  <th>Host</th><th>IP</th><th>Planned actions</th><th>Overall pre</th><th>Overall post</th>
+  <th>Tanium</th><th>CrowdStrike</th><th>Arc</th><th>rsyslog</th><th>Summary</th><th>Updated (IST)</th>
+</tr></thead>
+<tbody id="anomaly-movements-body"></tbody>
+</table>
+</div>
+
+<h3 id="anomaly-planned">Planned action counts (from CSV hints)</h3>
+<table><thead><tr><th>Catalog action</th><th>Hosts</th></tr></thead><tbody id="anomaly-planned-body"></tbody></table>
+
+<h3 id="anomaly-remediated">Remediation on anomaly hosts (this execution)</h3>
+<table><thead><tr><th>Action</th><th>Executed</th><th>Failed</th><th>Blocked</th></tr></thead><tbody id="anomaly-actions-body"></tbody></table>
+
+<h2 id="overview">Overview</h2>
+<p>Runs on <code>blr-kiruthika.strykercorp.com</code> at <code>security-tools-orchestrator/Self_healing/</code>. Monthly loop: inventory on 14/28, execution on 15/29.</p>
+<div class="grid">
+  <div class="card"><h4>pipeline.py</h4><p>Orchestrates ingest, parallel fleet, compliance, remediation, Excel.</p></div>
+  <div class="card"><h4>ssh_collector.py</h4><p>10 creds per host; Paramiko + OpenSSH; collect_health.sh.</p></div>
+  <div class="card"><h4>compliance/engine.py</h4><p>Maps facts to catalog actions only.</p></div>
+  <div class="card"><h4>ansible_exec.py</h4><p>Playbooks + securitytools.env + RPM payloads.</p></div>
+</div>
+
+<h2 id="does">What it does</h2>
+<table><thead><tr><th>Phase</th><th>Action</th></tr></thead><tbody>
+<tr><td>Ingest</td><td>Parse linux_servers_full_agent_status.csv/xlsx</td></tr>
+<tr><td>SSH</td><td>Health script on each reachable host</td></tr>
+<tr><td>Decide</td><td>Component pre-status (Tanium, Falcon, Arc, rsyslog)</td></tr>
+<tr><td>Fix</td><td>Ansible when DRY_RUN=false</td></tr>
+<tr><td>Report</td><td>EXEC-*.xlsx + SQLite audit</td></tr>
+</tbody></table>
+
+<h2 id="delivery">Report delivery</h2>
+<p class="meta">Latest run workbook: use <a href="#live">Live run</a> → <b>Download Excel report</b> (same file as <code>reports/generated/EXEC-*.xlsx</code>, refreshed while the run is active).</p>
+<table><thead><tr><th>Mode</th><th>Status</th></tr></thead><tbody>
+<tr><td><code>drop</code></td><td><span class="tag ok">Active</span> Manual upload to reports/drop/</td></tr>
+<tr><td><code>o365_email</code></td><td><span class="tag warn">Optional</span> Graph after Ambient 16:00 IST email (<code>scripts/fetch_tanium_from_email.py</code>, needs <code>secrets/o365_graph.json</code>). Prefers <code>linux_servers_full_agent_status.csv</code>; if only <code>linux_servers_anomalies.csv</code> (flagged hosts) is attached it is saved separately and logged as PARTIAL, never overwriting an existing full inventory</td></tr>
+<tr><td>Tanium Connect → share/SFTP</td><td><span class="tag ok">Recommended</span> Full 2166-row inventory is too large for email; schedule a Tanium Connect export of <code>linux_servers_full_agent_status.csv</code> to <code>reports/drop/</code> (SMB share or SFTP)</td></tr>
+<tr><td>Atlas API</td><td><span class="tag warn">Not used</span> No UI scrape in repo</td></tr>
+</tbody></table>
+
+<h2 id="stack">Tech stack</h2>
+<table><thead><tr><th>Layer</th><th>Tech</th></tr></thead><tbody>
+<tr><td>Runtime</td><td>Python 3.9+, pydantic-settings</td></tr>
+<tr><td>DB</td><td>SQLAlchemy, SQLite / PostgreSQL</td></tr>
+<tr><td>SSH</td><td>ssh_compat.py, Paramiko &lt;4, sshpass</td></tr>
+<tr><td>Fix</td><td>ansible-runner, 21 playbooks</td></tr>
+<tr><td>Output</td><td>openpyxl Excel</td></tr>
+</tbody></table>
+
+<h2 id="arch">System architecture</h2>
+<p>Everything runs on one orchestrator host. Inputs arrive on the left, the eight internal layers run top to bottom, and the only outbound traffic to the fleet is SSH on port 22 (read-only health collection, then Ansible remediation when <code>DRY_RUN=false</code>).</p>
+<figure class="fig">
+<svg viewBox="0 0 1000 690" role="img" aria-label="Self_healing system architecture">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6b7488"/>
+    </marker>
+    <marker id="ahb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4da3ff"/>
+    </marker>
+  </defs>
+
+  <text x="110" y="22" class="lane">INPUTS</text>
+  <text x="490" y="22" class="lane">ORCHESTRATOR</text>
+  <text x="880" y="22" class="lane">TARGETS &amp; OUTPUTS</text>
+
+  <!-- Inputs -->
+  <g class="node src">
+    <rect x="20" y="60" width="180" height="72" rx="6"/>
+    <text x="32" y="82" class="t">Tanium report</text>
+    <text x="32" y="100" class="s">agent status CSV / XLSX</text>
+    <text x="32" y="116" class="s">generated 14th / 28th</text>
+  </g>
+  <g class="node src dim">
+    <rect x="20" y="148" width="180" height="72" rx="6"/>
+    <text x="32" y="170" class="t">Ambient email</text>
+    <text x="32" y="188" class="s">16:00 IST · o365_email</text>
+    <text x="32" y="204" class="s">optional (on hold)</text>
+  </g>
+  <g class="node src">
+    <rect x="20" y="236" width="180" height="72" rx="6"/>
+    <text x="32" y="258" class="t">Manual SCP</text>
+    <text x="32" y="276" class="s">reports/drop/ (active)</text>
+    <text x="32" y="292" class="s">TANIUM_REPORT_MODE=drop</text>
+  </g>
+  <g class="node sec">
+    <rect x="20" y="360" width="180" height="88" rx="6"/>
+    <text x="32" y="382" class="t">secrets/</text>
+    <text x="32" y="400" class="s">credentials.json (10 sets)</text>
+    <text x="32" y="416" class="s">securitytools.env</text>
+    <text x="32" y="432" class="s">known_hosts</text>
+  </g>
+  <g class="node sec">
+    <rect x="20" y="478" width="180" height="72" rx="6"/>
+    <text x="32" y="500" class="t">Payloads</text>
+    <text x="32" y="518" class="s">automation/payloads/</text>
+    <text x="32" y="534" class="s">tanium · crowdstrike RPMs</text>
+  </g>
+
+  <!-- Orchestrator container -->
+  <rect x="226" y="34" width="532" height="640" rx="10" class="box"/>
+  <text x="242" y="52" class="cap">blr-kiruthika · 10.90.105.221 · security-tools-orchestrator/Self_healing</text>
+
+  <g class="node layer">
+    <rect x="246" y="62" width="492" height="56" rx="6"/>
+    <text x="260" y="84" class="t"><tspan class="n">1</tspan>  Schedule</text>
+    <text x="260" y="104" class="s">monthly_controller.py · scheduler/calendar.py · run 15/29 · archive 14/28</text>
+  </g>
+  <g class="node layer">
+    <rect x="246" y="136" width="492" height="56" rx="6"/>
+    <text x="260" y="158" class="t"><tspan class="n">2</tspan>  Ingest &amp; snapshot</text>
+    <text x="260" y="178" class="s">atlas_fetch.py · csv_source.py · normalize.py · ip_extract.py · archive</text>
+  </g>
+  <g class="node layer">
+    <rect x="246" y="210" width="492" height="56" rx="6"/>
+    <text x="260" y="232" class="t"><tspan class="n">3</tspan>  Inventory &amp; state</text>
+    <text x="260" y="252" class="s">models/ (SQLite / PostgreSQL) · inventory/builder.py → inventories/EXEC-*.yml</text>
+  </g>
+  <g class="node layer hot">
+    <rect x="246" y="284" width="492" height="56" rx="6"/>
+    <text x="260" y="306" class="t"><tspan class="n">4</tspan>  Fleet engine</text>
+    <text x="260" y="326" class="s">services/pipeline.py · MAX_PARALLEL_SERVERS workers · safety pause</text>
+  </g>
+  <g class="node layer">
+    <rect x="246" y="358" width="492" height="56" rx="6"/>
+    <text x="260" y="380" class="t"><tspan class="n">5</tspan>  SSH health collection</text>
+    <text x="260" y="400" class="s">ssh_collector.py · ssh_compat.py · credentials/provider.py · collect_health.sh</text>
+  </g>
+  <g class="node layer">
+    <rect x="246" y="432" width="492" height="56" rx="6"/>
+    <text x="260" y="454" class="t"><tspan class="n">6</tspan>  Decide</text>
+    <text x="260" y="474" class="s">health.py · compliance/engine.py · ai/analyst.py · remediation/policy.py</text>
+  </g>
+  <g class="node layer">
+    <rect x="246" y="506" width="492" height="56" rx="6"/>
+    <text x="260" y="528" class="t"><tspan class="n">7</tspan>  Remediate</text>
+    <text x="260" y="548" class="s">ansible_exec.py · catalog.py · 21 playbooks · *_tool.sh · gated by DRY_RUN</text>
+  </g>
+  <g class="node layer">
+    <rect x="246" y="580" width="492" height="56" rx="6"/>
+    <text x="260" y="602" class="t"><tspan class="n">8</tspan>  Report &amp; notify</text>
+    <text x="260" y="622" class="s">reporting/excel.py · notifications/sender.py · audit events in DB</text>
+  </g>
+
+  <!-- internal arrows -->
+  <g class="edge">
+    <line x1="492" y1="118" x2="492" y2="134"/>
+    <line x1="492" y1="192" x2="492" y2="208"/>
+    <line x1="492" y1="266" x2="492" y2="282"/>
+    <line x1="492" y1="340" x2="492" y2="356"/>
+    <line x1="492" y1="414" x2="492" y2="430"/>
+    <line x1="492" y1="488" x2="492" y2="504"/>
+    <line x1="492" y1="562" x2="492" y2="578"/>
+  </g>
+
+  <!-- Targets -->
+  <g class="node ext">
+    <rect x="790" y="60" width="190" height="72" rx="6"/>
+    <text x="802" y="82" class="t">vCenter</text>
+    <text x="802" y="100" class="s">vcenter/readonly.py</text>
+    <text x="802" y="116" class="s">VM + power lookup (read-only)</text>
+  </g>
+  <g class="node fleet">
+    <rect x="790" y="300" width="190" height="196" rx="6"/>
+    <text x="802" y="324" class="t">Linux fleet</text>
+    <text x="802" y="342" class="s">~807 hosts · SSH port 22</text>
+    <text x="802" y="358" class="s">RHEL / OL / CentOS 7–9</text>
+    <line x1="802" y1="370" x2="968" y2="370" class="sep"/>
+    <text x="802" y="390" class="s">• Tanium Client</text>
+    <text x="802" y="408" class="s">• CrowdStrike Falcon</text>
+    <text x="802" y="426" class="s">• Azure Arc (himdsd)</text>
+    <text x="802" y="444" class="s">• Sentinel / AMA</text>
+    <text x="802" y="462" class="s">• rsyslog</text>
+    <text x="802" y="482" class="s dimtxt">sudo -n bash -s</text>
+  </g>
+  <g class="node out">
+    <rect x="790" y="540" width="190" height="134" rx="6"/>
+    <text x="802" y="562" class="t">Outputs</text>
+    <text x="802" y="582" class="s">reports/generated/</text>
+    <text x="802" y="598" class="s">  EXEC-YYYY-MM-DD-NNN.xlsx</text>
+    <text x="802" y="616" class="s">Audit + results in DB</text>
+    <text x="802" y="634" class="s">Notification summary</text>
+    <text x="802" y="652" class="s">Website :8080/self-healing</text>
+  </g>
+
+  <!-- input edges -->
+  <g class="edge">
+    <path d="M200,96 C222,96 222,164 244,164"/>
+    <path d="M200,184 C222,184 222,164 244,164" class="dash"/>
+    <path d="M200,272 C222,272 222,164 244,164"/>
+    <path d="M200,404 C222,404 222,386 244,386"/>
+    <path d="M200,420 C224,420 224,534 244,534"/>
+    <path d="M200,514 C222,514 222,534 244,534"/>
+  </g>
+  <!-- target edges -->
+  <g class="edge hot">
+    <path d="M738,386 C764,386 764,360 788,360"/>
+    <path d="M738,534 C764,534 764,440 788,440"/>
+  </g>
+  <g class="edge">
+    <path d="M788,96 C764,96 764,312 740,312"/>
+    <path d="M738,608 C762,608 762,606 788,606"/>
+  </g>
+  <text x="741" y="402" class="lbl">collect</text>
+  <text x="741" y="550" class="lbl">ansible</text>
+</svg>
+<figcaption>Solid blue edges are SSH (port 22) from the orchestrator to the fleet. The dashed edge is the optional email intake.</figcaption>
+</figure>
+
+<h2 id="pipeline-color">Full pipeline: fetch / drop → completion</h2>
+<p>One picture of the whole run, colour-coded by phase: <span style="color:#3b82f6">intake</span>, <span style="color:#6366f1">trigger</span>, <span style="color:#06b6d4">validate</span>, <span style="color:#a855f7">state &amp; fleet engine</span>, <span style="color:#14b8a6">SSH</span>, <span style="color:#10b981">health</span>, <span style="color:#f59e0b">decide</span>, <span style="color:#f97316">remediate</span>, <span style="color:#22c55e">post-validate</span> and <span style="color:#ec4899">finalize &amp; outputs</span>. Stores sit on the left; dashed arrows to the right are where a host or run stops, with the status it ends in. Steps 7–11 repeat for every machine, 10 at a time.</p>
+<figure class="fig">
+<a href="pipeline.svg" target="_blank"><img src="pipeline.svg" alt="Self_healing pipeline from fetch or drop to completion" style="width:100%;height:auto;display:block"></a>
+<figcaption>Click to open full size. Regenerate with <code>python3 scripts/build_pipeline_diagram.py</code>.</figcaption>
+</figure>
+
+<h2 id="layers">Component layers</h2>
+<table><thead><tr><th>#</th><th>Layer</th><th>Key modules</th><th>Responsibility</th></tr></thead><tbody>
+<tr><td>1</td><td>Schedule</td><td><code>scripts/monthly_controller.py</code>, <code>scheduler/calendar.py</code></td><td>Decides whether today is a run day (15th / 29th, Feb handled), which report date to expect, and archives on 14 / 28.</td></tr>
+<tr><td>2</td><td>Ingest</td><td><code>ingestion/atlas_fetch.py</code>, <code>csv_source.py</code>, <code>normalize.py</code>, <code>ip_extract.py</code></td><td>Snapshots the drop file to <code>incoming/</code> + archive, maps Tanium columns, normalizes health values, picks the first usable IPv4, de-duplicates rows.</td></tr>
+<tr><td>3</td><td>State</td><td><code>models/entities.py</code>, <code>repository.py</code>, <code>inventory/builder.py</code></td><td>Upserts servers, creates the execution row (<code>EXEC-YYYY-MM-DD-NNN</code>), writes the Ansible inventory, records every audit event.</td></tr>
+<tr><td>4</td><td>Fleet engine</td><td><code>services/pipeline.py</code></td><td>Runs hosts in batches of <code>MAX_PARALLEL_SERVERS</code> threads, logs progress every 25 hosts, pauses remediation if the failure ratio crosses <code>FLEET_FAILURE_THRESHOLD</code>.</td></tr>
+<tr><td>5</td><td>SSH</td><td><code>services/ssh_collector.py</code>, <code>ssh_compat.py</code>, <code>credentials/provider.py</code></td><td>Tries up to 10 credential sets per host, Paramiko first then OpenSSH + sshpass, runs the read-only <code>collect_health.sh</code>.</td></tr>
+<tr><td>6</td><td>Decide</td><td><code>services/health.py</code>, <code>compliance/engine.py</code>, <code>ai/analyst.py</code>, <code>remediation/policy.py</code></td><td>Turns facts into per-agent status, maps non-healthy agents to catalog action IDs, adds an advisory AI note, and rejects any plan outside the catalog.</td></tr>
+<tr><td>7</td><td>Remediate</td><td><code>remediation/ansible_exec.py</code>, <code>catalog.py</code>, <code>automation/playbooks/</code></td><td>Runs only catalog playbooks with the host's winning credential, retries per <code>MAX_RETRIES</code>, then re-collects health to validate.</td></tr>
+<tr><td>8</td><td>Report</td><td><code>reporting/excel.py</code>, <code>notifications/sender.py</code></td><td>Builds the six-sheet workbook and sends the execution summary.</td></tr>
+</tbody></table>
+
+<h2 id="calendar">Monthly timeline</h2>
+<div class="timeline">
+  <div class="tl"><b>14th / 28th · 16:00 IST</b><span>Tanium Ambient report emailed (Feb uses 28 + 29 variant)</span></div>
+  <div class="tl"><b>14th / 28th · after email</b><span>Snapshot + archive; report copied to <code>reports/drop/</code> (manual SCP today)</span></div>
+  <div class="tl hot"><b>15th / 29th</b><span>Cron fires <code>monthly_controller.py</code> → full fleet execution</span></div>
+  <div class="tl"><b>Same day, ~2–4 h later</b><span>Excel in <code>reports/generated/</code> + notification</span></div>
+</div>
+<p>Reports older than <code>MAX_REPORT_AGE_HOURS</code> are rejected, so the run never acts on stale data. Manual runs use <code>initiate_run.py</code>, which bypasses the calendar.</p>
+
+<h2 id="flow">End-to-end run flow</h2>
+<ol class="stages">
+<li><b>Trigger</b><span>Cron (<code>monthly_controller.py</code>) or manual <code>initiate_run.py --dry-run | --production</code></span></li>
+<li><b>Locate report</b><span><code>reports/drop/linux_servers_full_agent_status.csv|xlsx</code>, or Graph email fetch when <code>o365_email</code> is enabled</span></li>
+<li><b>Snapshot &amp; validate</b><span>Copy to <code>reports/incoming/</code> + archive, SHA-256, freshness check; invalid → execution closed as <code>invalid</code></span></li>
+<li><b>Parse &amp; upsert</b><span>Column mapping, IPv4 extraction, de-dup; servers upserted; execution row created as <code>running</code></span></li>
+<li><b>Inventory</b><span><code>automation/inventories/EXEC-*.yml</code> written for Ansible</span></li>
+<li><b>Load credentials</b><span>Registry synced from <code>credentials.json</code>; passwords resolved in memory only</span></li>
+<li><b>Fleet loop</b><span>Each host goes through the per-host decision flow below, in parallel batches</span></li>
+<li><b>Finalize</b><span>Counts aggregated, status <code>completed</code> / <code>dry_run_completed</code> / <code>safety_paused</code></span></li>
+<li><b>Excel + notify</b><span><code>reports/generated/EXEC-*.xlsx</code>; JSON summary printed with <code>report_path</code></span></li>
+      </ol>
+
+<h2 id="hostflow">Per-host decision flow</h2>
+<p>Every host ends in exactly one final status. The main path runs down the left; each check that fails branches right to its terminal status.</p>
+<div class="ladder">
+  <div class="rung"><div class="step">Host from inventory</div><div class="else"></div></div>
+  <div class="rung"><div class="step q">Usable IPv4 in report?</div><div class="else"><span class="st bad">SSH_FAILED</span> no IPv4</div></div>
+  <div class="rung"><div class="step">Order credential sets <small>credential_hint first, then cred-01…cred-10</small></div><div class="else"></div></div>
+  <div class="rung"><div class="step q">Any set authenticates? <small>see SSH credential loop</small></div><div class="else"><span class="st bad">AUTHENTICATION_FAILED</span> all sets rejected<br><span class="st bad">SSH_FAILED</span> host unreachable / timeout</div></div>
+  <div class="rung"><div class="step">Run <code>collect_health.sh</code> <small>sudo -n bash -s, falls back to bash -s</small></div><div class="else"></div></div>
+  <div class="rung"><div class="step q">OS supported?</div><div class="else"><span class="st warn">UNSUPPORTED_OS</span></div></div>
+  <div class="rung"><div class="step q">All agents healthy? <small>Tanium · Falcon · Arc · Sentinel · rsyslog</small></div><div class="else"><span class="st ok">HEALTHY</span> no action needed</div></div>
+  <div class="rung"><div class="step">AI advisory + policy review <small>catalog IDs only</small></div><div class="else"></div></div>
+  <div class="rung"><div class="step q">Fleet paused?</div><div class="else"><span class="st warn">incomplete</span> remediation skipped</div></div>
+  <div class="rung"><div class="step q">sudo OK and plan valid?</div><div class="else"><span class="st warn">BLOCKED_BY_POLICY</span></div></div>
+  <div class="rung"><div class="step q">DRY_RUN=false?</div><div class="else"><span class="st info">DRY_RUN</span> actions listed, nothing executed</div></div>
+  <div class="rung"><div class="step">Ansible per action <small>winning credential, retries = MAX_RETRIES</small></div><div class="else"></div></div>
+  <div class="rung"><div class="step q">Post-validation SSH healthy?</div><div class="else"><span class="st bad">REMEDIATION_FAILED</span></div></div>
+  <div class="rung"><div class="step end"><span class="st ok">REMEDIATION_SUCCESS</span> row written to Excel</div><div class="else"></div></div>
+</div>
+
+<h2 id="ssh">SSH credential loop</h2>
+<p>Each credential set is a fixed <b>username + password</b> pair. For one host the collector walks the sets in order and stops at the first success:</p>
+<div class="flow-row">
+<div class="flow-box"><b>cred-N</b><small>user + password</small></div><span class="flow-arrow">→</span>
+<div class="flow-box"><b>Paramiko</b><small>legacy KEX, ssh-rsa</small></div><span class="flow-arrow">→</span>
+<div class="flow-box"><b>OpenSSH + sshpass</b><small>fallback on auth / transport error</small></div><span class="flow-arrow">→</span>
+<div class="flow-box"><b>success?</b><small>yes → collect · no → cred-N+1</small></div>
+</div>
+<table><thead><tr><th>Outcome of an attempt</th><th>What happens next</th></tr></thead><tbody>
+<tr><td>Authenticated</td><td>Stop; this set becomes the host's credential for collection and Ansible.</td></tr>
+<tr><td>Password rejected</td><td>Wait 0.3 s, try the next set.</td></tr>
+<tr><td>Banner error / connection reset</td><td>Retry the same set once after 2 s (handles sshd <code>MaxStartups</code> throttling).</td></tr>
+<tr><td>Host key changed</td><td><code>ssh-keygen -R</code> on <code>secrets/known_hosts</code>, retry once.</td></tr>
+<tr><td>No route / refused / timed out</td><td>Host-level failure: skip remaining sets → <code>SSH_FAILED</code>.</td></tr>
+</tbody></table>
+<div class="note">New host keys are recorded with <code>ssh-keyscan</code> under a lock, so parallel workers cannot corrupt <code>known_hosts</code>. Repeated wrong passwords can trigger <code>pam_faillock</code> on targets; adding a <code>credential_hint</code> column to the CSV makes the right set go first.</div>
+
+<h2 id="data">Data &amp; state paths</h2>
+<table><thead><tr><th>Stage</th><th>Location</th><th>Contents</th></tr></thead><tbody>
+<tr><td>Drop</td><td><code>reports/drop/</code></td><td>Latest Tanium file as delivered</td></tr>
+<tr><td>Snapshot</td><td><code>reports/incoming/</code>, <code>reports/archive/</code></td><td>Dated copy used by the run, retained history</td></tr>
+<tr><td>Database</td><td><code>DATABASE_URL</code> (SQLite / PostgreSQL)</td><td>Servers, executions, agent checks (pre / post), remediations, AI notes, audit events, credential registry (no passwords)</td></tr>
+<tr><td>Inventory</td><td><code>automation/inventories/EXEC-*.yml</code></td><td>Ansible hosts for the execution</td></tr>
+<tr><td>Secrets</td><td><code>secrets/</code></td><td>credentials.json, securitytools.env, known_hosts — never written to reports</td></tr>
+<tr><td>Output</td><td><code>reports/generated/EXEC-*.xlsx</code></td><td>Summary, Agent Compliance, Remediation Details, Failed Servers, Execution Log, AI Analysis</td></tr>
+<tr><td>Logs</td><td><code>logs/</code></td><td>Run logs (SSH attempts, fleet progress)</td></tr>
+</tbody></table>
+
+<h2 id="statuses">Status vocabulary</h2>
+<table><thead><tr><th>Status</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><span class="st ok">HEALTHY</span></td><td>All agents healthy at pre-check</td></tr>
+<tr><td><span class="st ok">REMEDIATION_SUCCESS</span></td><td>Fixed and confirmed by post-validation</td></tr>
+<tr><td><span class="st info">DRY_RUN</span></td><td>Remediation needed; actions planned only</td></tr>
+<tr><td><span class="st bad">REMEDIATION_FAILED</span></td><td>Ansible ran but post-check not healthy</td></tr>
+<tr><td><span class="st bad">AUTHENTICATION_FAILED</span></td><td>Reachable, but no credential set worked</td></tr>
+<tr><td><span class="st bad">SSH_FAILED</span></td><td>No IPv4, unreachable, refused, or timed out</td></tr>
+<tr><td><span class="st warn">UNSUPPORTED_OS</span></td><td>OS / version outside the support matrix</td></tr>
+<tr><td><span class="st warn">BLOCKED_BY_POLICY</span></td><td>No sudo, or plan rejected by policy</td></tr>
+</tbody></table>
+<p>Per-agent values in the compliance sheet: <code>HEALTHY</code>, <code>MISSING</code>, <code>INACTIVE</code>, <code>FAILED</code>, <code>NOT_REPORTING</code>, <code>UNHEALTHY</code>, <code>UNKNOWN</code>.</p>
+
+<h2 id="mechanism">Execution model</h2>
+<ul>
+<li>All hosts are attempted. The safety pause counts remediation failures only (<code>FLEET_PAUSE_ON_SSH_FAILURES=false</code>).</li>
+<li>Ansible uses only the credential set that authenticated on that host.</li>
+<li><code>DRY_RUN=true</code> by default; <code>--production</code> is required for live changes.</li>
+<li>No general shell endpoint: remote commands are limited to the collector script and catalog playbooks.</li>
+      </ul>
+
+<h2 id="files">File catalog</h2>
+<table><thead><tr><th>Path</th><th>Role</th></tr></thead><tbody>
+        <tr><td>backend/services/pipeline.py</td><td>Orchestration</td></tr>
+<tr><td>backend/services/ssh_compat.py</td><td>SSH policy</td></tr>
+        <tr><td>secrets/credentials/credentials.json</td><td>10 SSH profiles</td></tr>
+<tr><td>secrets/securitytools.env</td><td>Falcon / Arc / syslog</td></tr>
+<tr><td>automation/playbooks/*.yml</td><td>Remediation catalog</td></tr>
+</tbody></table>
+
+<h2 id="scripts">Scripts</h2>
+<table><thead><tr><th>Script</th><th>Use</th></tr></thead><tbody>
+<tr><td>verify_readiness.py</td><td>Pre-flight</td></tr>
+<tr><td>initiate_run.py</td><td>Dry-run / production</td></tr>
+<tr><td>monthly_controller.py</td><td>Cron 14–29</td></tr>
+<tr><td>publish_docs_to_nginx.sh</td><td>Update this website</td></tr>
+</tbody></table>
+
+<h2 id="config">Configuration</h2>
+<p><code>DRY_RUN</code>, <code>TANIUM_REPORT_MODE=drop</code>, <code>MAX_PARALLEL_SERVERS=15</code>, <code>CREDENTIAL_DIR</code>, <code>SSH_*</code> in <code>.env</code>.</p>
+
+<h2 id="excel">Excel output</h2>
+<p>Download the workbook and open the <b>Fleet Status</b> tab first — that is the full host table you asked for: <b>IP, hostname, OS, pre/post Tanium · Sentinel · CrowdStrike · rsyslog · Arc, Comments</b> (same as the live fleet table below). The <b>Summary</b> tab is run totals only.</p>
+<div class="report-dl-row excel-dl-block">
+  <a id="excel-dl" class="hero-dl" href="#" download hidden>Download Excel report</a>
+  <p class="meta" id="excel-dl-meta">Loading last executed report from status.json…</p>
+</div>
+<div class="table-scroll excel-report-table-wrap">
+<table id="excel-last-report-table">
+<thead><tr>
+  <th>Execution ID</th><th>Status</th><th>Mode</th><th>Started (IST)</th><th>Ended (IST)</th>
+  <th>Hosts</th><th>Workbook</th><th>Size</th><th>Updated (IST)</th>
+</tr></thead>
+<tbody id="excel-last-report-body"><tr><td colspan="9">Loading…</td></tr></tbody>
+      </table>
+</div>
+<p class="meta">On the controller VM the canonical file is <code>Self_healing/reports/generated/EXEC-&lt;date&gt;-&lt;seq&gt;.xlsx</code>. Website copy: <code>docs/self-healing/downloads/</code> (same filename).</p>
+<p><b>Sheets:</b> Summary, Fleet Status, Issues Found, Issue Details, Agent Compliance, Remediation Details, Failed Servers, Execution Log, AI Analysis.</p>
+<p class="meta">Tip: use Excel <b>AutoFilter</b> on the Fleet Status sheet header row to search like the website search box.</p>
+
+<h2 id="setup">One-time setup</h2>
+<pre class="cmd">cd Self_healing && python3 scripts/verify_readiness.py</pre>
+
+<h2 id="dryrun">Dry-run</h2>
+<pre class="cmd">python3 scripts/initiate_run.py --dry-run --force-rerun --parallel 15</pre>
+
+<h2 id="production">Production</h2>
+<pre class="cmd">nohup python3 -u scripts/initiate_run.py --production --force-rerun --allow-stale-report --parallel 10 &gt; logs/fleet-prod-$(date +%F).log 2&gt;&amp;1 &amp;</pre>
+<div class="note"><code>--production</code> forces live mode for the run regardless of <code>DRY_RUN</code> in <code>.env</code>; the log prints <em>PRODUCTION: live remediation enabled</em> and the execution row has <code>dry_run=0</code>. Keep <code>--parallel</code> ≤ 10. Re-running the same command while an execution is still <code>running</code> resumes it and skips hosts already recorded. <code>--allow-stale-report</code> bypasses the 36 h report-age guard.</div>
+
+<h2 id="website">Open this site</h2>
+<div class="note"><strong>Use IP if DNS fails:</strong><br>
+<a href="http://10.90.105.221:8080/self-healing/">http://10.90.105.221:8080/self-healing/</a><br>
+Requires VPN/network route to 10.90.105.221</div>
+
+<h2 id="fixes-1004">Fixes 2026-10-04</h2>
+<table><thead><tr><th>Area</th><th>Problem</th><th>Fix</th></tr></thead><tbody>
+<tr><td>Credentials</td><td>DB credential registry kept stale usernames/secret refs, so valid creds failed fleet-wide</td><td>Registry re-synced from <code>credentials.json</code> every run; entries no longer in the bundle are disabled</td></tr>
+<tr><td>SSH</td><td>OpenSSH fallback retried wrong passwords (doubling failed logins / faillock risk)</td><td>Fallback only on transport errors, never on auth failure; 0.3 s pause between credentials</td></tr>
+<tr><td>known_hosts</td><td>Parallel writers corrupted <code>secrets/known_hosts</code></td><td>Single locked writer, per-call OpenSSH file merged afterwards, tolerant loader</td></tr>
+<tr><td>Fleet engine</td><td>Worker crashes silently dropped hosts; batch barrier idled behind slow hosts</td><td>Per-worker crash guard + thread pool</td></tr>
+<tr><td>Database</td><td>“database is locked”: each worker held the SQLite write lock across SSH/Ansible</td><td>Commit before every slow step; WAL + 60 s busy timeout</td></tr>
+<tr><td>CrowdStrike check</td><td>CID regex expected dashes; every Falcon host looked UNHEALTHY</td><td>Matches <code>cid="&lt;32 hex&gt;"</code>; sensor running outside systemd (falcond, exit 85) with CID+AID = HEALTHY (<code>running_outside_systemd</code>)</td></tr>
+<tr><td>Payloads</td><td>Installers never copied to targets; <code>find | head -1</code> could pick the wrong EL build</td><td>Playbooks stage the RPM matching EL major + arch, clean up in <code>always</code></td></tr>
+<tr><td>Repair safety</td><td><code>rpm -Uvh</code> fallback replaced an installed sensor with a mismatched build</td><td>Repair never swaps an installed package; installs only if missing</td></tr>
+<tr><td>Live mode</td><td><code>--production</code> still ran DRY_RUN from <code>.env</code> (EXEC-2026-10-04-003 aborted)</td><td><code>--production</code> sets live mode before the pipeline is built</td></tr>
+<tr><td>Report age</td><td>Stale-report guard refused the 72 h-old list</td><td><code>--allow-stale-report</code> flag</td></tr>
+</tbody></table>
+<div class="note"><strong>Known gaps:</strong> Azure Arc and Sentinel/AMA payload folders (<code>automation/payloads/arc/</code>, <code>automation/payloads/sentinel/</code>) are empty, so ARC_INSTALL / SENTINEL_INSTALL fail until installers are added. CrowdStrike CID <em>mismatch</em> against <code>FALCON_CID</code> is not detected yet (only presence). Hosts where sudo validation fails end as BLOCKED_BY_POLICY.</div>
+
+<h2 id="trouble">Troubleshooting</h2>
+<table><thead><tr><th>Issue</th><th>Fix</th></tr></thead><tbody>
+<tr><td>DNS_PROBE_FINISHED_NXDOMAIN</td><td>Use IP URL above</td></tr>
+<tr><td>All SSH failed</td><td>Creds, Paramiko 3.x, port 22</td></tr>
+<tr><td>InvalidHostKey / Incorrect padding</td><td>Corrupt <code>secrets/known_hosts</code>; auto-sanitized on load (fixed 2026-10-01)</td></tr>
+<tr><td>Unsupported KEX algorithm "+diffie…"</td><td>Old OpenSSH options; fixed in <code>ssh_compat.py</code></td></tr>
+<tr><td>Banner error / connection reset</td><td>Target sshd throttling; lower <code>MAX_PARALLEL_SERVERS</code> (e.g. 10)</td></tr>
+<tr><td>Correct password still rejected</td><td>Possible <code>pam_faillock</code> lockout: <code>faillock --user &lt;name&gt;</code> on target</td></tr>
+<tr><td>All remediations DRY_RUN in a --production run</td><td>Run started before the 2026-10-04 fix; stop it and relaunch</td></tr>
+<tr><td>“fleet worker failed … database is locked”</td><td>Fixed 2026-10-04; relaunch the same command to resume the execution</td></tr>
+<tr><td>rpmdb DB_RUNRECOVERY on target</td><td>Corrupt RPM database on the host: <code>rpm --rebuilddb</code> (manual)</td></tr>
+<tr><td>BLOCKED_BY_POLICY “sudo validation failed”</td><td>Credential lacks passwordless/password sudo on that host</td></tr>
+</tbody></table>
+
+<h2 id="security">Security</h2>
+<ul><li>Secrets only under secrets/; catalog-bound Ansible; no arbitrary SSH shell API.</li></ul>
+
+<footer>Self_healing · <a href="guide.pdf">PDF guide</a> · Orchestrator 10.90.105.221</footer>
+  </main>
+</div>
+<script>
+const links=[...document.querySelectorAll('nav a[href^="#"]')];
+const targets=links.map(a=>document.querySelector(a.getAttribute('href'))).filter(Boolean);
+const spy=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(!e.isIntersecting)return;
+    links.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id));
+  });
+},{rootMargin:'-15% 0px -75% 0px'});
+targets.forEach(t=>spy.observe(t));
+</script>
+<script src="live.js?v=20261013-nginx-sync"></script>
+</body>
+</html>

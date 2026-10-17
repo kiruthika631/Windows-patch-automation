@@ -275,6 +275,22 @@ $result = [ordered]@{
 try {
     Write-GuestLog -Level Information -Stage Initialize -Message 'Starting Windows Update cycle.'
     try {
+        & "$env:SystemRoot\System32\netsh.exe" winhttp reset proxy | Out-Null
+        & "$env:SystemRoot\System32\netsh.exe" winhttp import proxy source=ie | Out-Null
+        $auKey = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'
+        if (Test-Path -LiteralPath $auKey) {
+            Remove-ItemProperty -LiteralPath $auKey -Name UseWUServer -ErrorAction SilentlyContinue
+            Remove-ItemProperty -LiteralPath $auKey -Name WUServer -ErrorAction SilentlyContinue
+            Remove-ItemProperty -LiteralPath $auKey -Name WUStatusServer -ErrorAction SilentlyContinue
+        }
+        Write-GuestLog -Level Information -Stage Initialize -Message 'Reset WinHTTP proxy and cleared WSUS policy overrides when present.'
+    }
+    catch {
+        Write-GuestLog -Level Warning -Stage Initialize -Message 'Could not reset WinHTTP/WSUS settings.' -Data @{
+            error = $_.Exception.Message
+        }
+    }
+    try {
         Initialize-WindowsUpdateEnvironment
     }
     catch {

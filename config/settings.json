@@ -6,19 +6,26 @@
   "autoRebootWhenRequired": true,
   "maxPatchCycles": 12,
   "maxRebootOnlyCycles": 3,
-  "postRebootWarmUpSeconds": 120,
-  "throttleLimit": 4,
+  "postRebootWarmUpSeconds": 240,
+  "throttleLimit": 1,
   "pollIntervalSeconds": 15,
   "timeouts": {
     "webOperationSeconds": 600,
-    "toolsReadySeconds": 900,
+    "toolsReadySeconds": 5400,
     "patchCycleSeconds": 14400,
     "repairCycleSeconds": 7200,
-    "rebootSeconds": 3600
+    "rebootSeconds": 5400
   },
   "retry": {
     "maxAttempts": 3,
     "initialDelaySeconds": 10
   },
-  "outputRetentionHours": 24
+  "outputRetentionHours": 24,
+  "offlineCumulativeFallback": {
+    "20348": {
+      "minimumUbr": 5074,
+      "msuUrl": "https://catalog.s.download.windowsupdate.com/c/msdownload/update/software/secu/2026/09/windows10.0-kb5122882-x64_4432fee39b6b3ea7136f5ca83544a997ad0a4b5e.msu",
+      "fileName": "windows10.0-kb5122882-x64.msu"
+    }
+  }
 }

@@ -24,7 +24,9 @@ $commonModule = Join-Path $PSScriptRoot 'Modules/Framework.Common.psm1'
 $guestOpsModule = Join-Path $PSScriptRoot 'Modules/VCenter.GuestOps.psm1'
 $guestPatchScript = Join-Path $PSScriptRoot 'Guest/Invoke-WindowsUpdate.ps1'
 $guestRepairScript = Join-Path $PSScriptRoot 'Guest/Repair-WindowsUpdateAgent.ps1'
+$guestOfflineScript = Join-Path $PSScriptRoot 'Guest/Install-OfflineCumulativeUpdate.ps1'
 Import-Module $commonModule -Force
+Import-Module $guestOpsModule -Force
 
 if (-not (Get-Module -ListAvailable -Name VMware.PowerCLI)) {
     throw 'VMware.PowerCLI is required. Install the version pinned by the GitHub Actions workflow.'
@@ -34,6 +36,9 @@ if (-not (Test-Path -LiteralPath $guestPatchScript -PathType Leaf)) {
 }
 if (-not (Test-Path -LiteralPath $guestRepairScript -PathType Leaf)) {
     throw "Guest repair script not found: $guestRepairScript"
+}
+if (-not (Test-Path -LiteralPath $guestOfflineScript -PathType Leaf)) {
+    throw "Guest offline install script not found: $guestOfflineScript"
 }
 
 $configuration = Import-FrameworkConfiguration -SettingsPath $SettingsPath -InventoryPath $InventoryPath
@@ -74,15 +79,36 @@ catch {
     }
 }
 
+# Pre-connect all vCenters in the parent runspace so parallel workers inherit live sessions.
+$inventoryVCenters = @($inventory | ForEach-Object {
+    if ($_.PSObject.Properties.Name -contains 'VCenterServer' -and -not [string]::IsNullOrWhiteSpace($_.VCenterServer)) {
+        $_.VCenterServer.Trim()
+    }
+    else {
+        [string]$settings.vCenterServer
+    }
+} | Sort-Object -Unique)
+foreach ($preConnectServer in $inventoryVCenters) {
+    Connect-PatchVCenter -Server $preConnectServer -Credential $vCenterCredential `
+        -IgnoreInvalidCertificate ([bool]$settings.ignoreInvalidCertificate) `
+        -WebOperationTimeoutSeconds ([int]$settings.timeouts.webOperationSeconds) | Out-Null
+    Write-StructuredLog -Path $masterLog -Level Information -Stage Run -Message 'Pre-connected vCenter for patch workers.' -Data @{
+        vCenter = $preConnectServer
+    }
+}
+
 $workerResults = @($inventory | ForEach-Object -ThrottleLimit ([int]$settings.throttleLimit) -Parallel {
     $row = $_
     Import-Module $using:commonModule -Force
     Import-Module $using:guestOpsModule -Force
 
+    $runDirectory = $using:runDirectory
     $workerSettings = $using:settings
     $workerVCenterCredential = $using:vCenterCredential
     $workerGuestCredential = $using:guestCredential
     $guestRepairScript = $using:guestRepairScript
+    $guestOfflineScript = $using:guestOfflineScript
+    $offlineFallbackConfig = $using:settings.offlineCumulativeFallback
     $vmName = $row.VMName.Trim()
     $inventoryIp = if ($row.PSObject.Properties.Name -contains 'IPAddress') { [string]$row.IPAddress.Trim() } else { '' }
     $safeVMName = $vmName -replace '[^\w.-]', '_'
@@ -189,12 +215,102 @@ $workerResults = @($inventory | ForEach-Object -ThrottleLimit ([int]$settings.th
 
         $stage = 'RepairWindowsUpdate'
         $deepRepairAttempted = $false
-        $comAvailableBeforeRepair = Test-GuestWindowsUpdateComAvailable -VM $vm -GuestCredential $workerGuestCredential `
-            -SearchCriteria $workerSettings.windowsUpdateSearchCriteria
-        $prePatchConvergence = Test-GuestPatchConvergence -VM $vm -GuestCredential $workerGuestCredential `
-            -SearchCriteria $workerSettings.windowsUpdateSearchCriteria
+        Invoke-WithRetry -Operation {
+            Reset-GuestWindowsUpdateConnectivity -VM $vm -GuestCredential $workerGuestCredential -ExpectedIPv4 $inventoryIp
+        } -OperationName 'Reset guest Windows Update connectivity' -MaxAttempts ([int]$workerSettings.retry.maxAttempts) `
+            -InitialDelaySeconds ([int]$workerSettings.retry.initialDelaySeconds) -OnRetry $logRetry
+        $comAvailableBeforeRepair = Invoke-WithRetry -Operation {
+            Test-GuestWindowsUpdateComAvailable -VM $vm -GuestCredential $workerGuestCredential `
+                -SearchCriteria $workerSettings.windowsUpdateSearchCriteria
+        } -OperationName 'Test Windows Update COM availability' -MaxAttempts ([int]$workerSettings.retry.maxAttempts) `
+            -InitialDelaySeconds ([int]$workerSettings.retry.initialDelaySeconds) -OnRetry $logRetry
+        $prePatchConvergence = Invoke-WithRetry -Operation {
+            Test-GuestPatchConvergence -VM $vm -GuestCredential $workerGuestCredential `
+                -SearchCriteria $workerSettings.windowsUpdateSearchCriteria
+        } -OperationName 'Test pre-patch convergence' -MaxAttempts ([int]$workerSettings.retry.maxAttempts) `
+            -InitialDelaySeconds ([int]$workerSettings.retry.initialDelaySeconds) -OnRetry $logRetry
+        if (-not [string]::IsNullOrWhiteSpace($prePatchConvergence.SearchError)) {
+            Write-StructuredLog -Path $vmLog -Level Warning -Stage $stage -VMName $vmName `
+                -Message 'Windows Update search reported an error during pre-check.' -Data @{
+                    searchError = $prePatchConvergence.SearchError
+                    comAvailable = [bool]$comAvailableBeforeRepair
+                }
+            if (-not $comAvailableBeforeRepair) {
+                Write-StructuredLog -Path $vmLog -Level Warning -Stage $stage -VMName $vmName `
+                    -Message 'Windows Update COM unavailable; agent repair required before patching.'
+            }
+        }
 
-        if ($comAvailableBeforeRepair -and [int]$prePatchConvergence.PendingUpdates -eq 0) {
+        $skipOnlinePatchCycles = $false
+        $osBuild = Get-GuestOsBuildNumbers -VM $vm -GuestCredential $workerGuestCredential
+        $offlineFamily = [string]$osBuild.Build
+        $offlineMinUbr = 5074
+        $wuUnreachable = -not [string]::IsNullOrWhiteSpace($prePatchConvergence.SearchError)
+        if ($null -ne $offlineFallbackConfig -and $offlineFallbackConfig.PSObject.Properties.Name -contains $offlineFamily) {
+            $offlineMinUbr = [int]$offlineFallbackConfig.$offlineFamily.minimumUbr
+        }
+        if ($offlineFamily -eq '20348' -and [int]$osBuild.Ubr -ge $offlineMinUbr) {
+            $status = 'Compliant'
+            $completedConvergence = $true
+            $skipOnlinePatchCycles = $true
+            Write-StructuredLog -Path $vmLog -Level Information -Stage Convergence -VMName $vmName `
+                -Message 'Guest OS build already meets minimum; skipping online Windows Update cycles.' -Data @{
+                    build = $osBuild.Full
+                    minimumUbr = $offlineMinUbr
+                }
+        }
+        elseif ($offlineFamily -eq '20348' -and [int]$osBuild.Ubr -lt $offlineMinUbr -and $wuUnreachable -and $null -ne $offlineFallbackConfig) {
+            $stage = 'OfflineCumulativeUpdate'
+            Write-StructuredLog -Path $vmLog -Level Warning -Stage $stage -VMName $vmName `
+                -Message 'Windows Update unreachable; installing cached cumulative MSU via Guest Operations.' -Data @{
+                    buildBefore = $osBuild.Full
+                    minimumUbr = $offlineMinUbr
+                }
+            $cacheDir = Join-Path $runDirectory 'offline-msu-cache'
+            $localMsu = Get-OfflineCumulativeMsuPath -BuildFamily $offlineFamily -FallbackConfig $offlineFallbackConfig `
+                -CacheDirectory $cacheDir
+            $offlineResult = Invoke-GuestOfflineCumulativeUpdate -VM $vm -GuestCredential $workerGuestCredential `
+                -GuestWorkingDirectory $guestDirectory -LocalMsuPath $localMsu `
+                -GuestInstallScriptPath $guestOfflineScript -LocalDirectory $localVMDirectory `
+                -MinimumUbr $offlineMinUbr
+            Write-StructuredLog -Path $vmLog -Level Information -Stage $stage -VMName $vmName `
+                -Message 'Offline cumulative MSU finished.' -Data @{
+                    status = [string]$offlineResult.status
+                    wusaExitCode = $offlineResult.wusaExitCode
+                    buildAfter = [string]$offlineResult.buildAfter
+                }
+            if ([string]$offlineResult.status -eq 'Failed') {
+                throw "Offline cumulative update failed: $($offlineResult.error.message)"
+            }
+            if ([bool]$offlineResult.rebootRequired -or [string]$offlineResult.status -eq 'RebootRequired') {
+                if (-not [bool]$workerSettings.autoRebootWhenRequired) {
+                    throw "Offline cumulative update requires reboot but autoRebootWhenRequired is disabled for '$vmName'."
+                }
+                $stage = 'Reboot'
+                $reboots++
+                Restart-PatchVMGuest -VM $vm -Server $viServer -GuestCredential $workerGuestCredential `
+                    -TimeoutSeconds ([int]$workerSettings.timeouts.rebootSeconds) `
+                    -PollSeconds ([int]$workerSettings.pollIntervalSeconds) `
+                    -PostRebootWarmUpSeconds ([Math]::Max([int]$workerSettings.postRebootWarmUpSeconds, 240))
+            }
+            $osBuild = Get-GuestOsBuildNumbers -VM $vm -GuestCredential $workerGuestCredential
+            if ([int]$osBuild.Ubr -ge $offlineMinUbr) {
+                $status = 'Compliant'
+                $completedConvergence = $true
+                $skipOnlinePatchCycles = $true
+            }
+        }
+
+        if ($skipOnlinePatchCycles) {
+            Write-StructuredLog -Path $vmLog -Level Information -Stage Convergence -VMName $vmName `
+                -Message 'Build meets minimum after offline cumulative update; skipping online patch cycles.' -Data @{
+                    build = $osBuild.Full
+                    minimumUbr = $offlineMinUbr
+                }
+        }
+        if (-not $skipOnlinePatchCycles) {
+        if ($comAvailableBeforeRepair -and [int]$prePatchConvergence.PendingUpdates -eq 0 -and `
+            [string]::IsNullOrWhiteSpace($prePatchConvergence.SearchError)) {
             Write-StructuredLog -Path $vmLog -Level Information -Stage $stage -VMName $vmName `
                 -Message 'Windows Update COM is available; skipping pre-patch repair.'
             $repairResult = [pscustomobject]@{
@@ -204,72 +320,18 @@ $workerResults = @($inventory | ForEach-Object -ThrottleLimit ([int]$settings.th
                 rebootRequired = $false
             }
         }
-        elseif ($comAvailableBeforeRepair -and [int]$prePatchConvergence.PendingUpdates -gt 0) {
-            Write-StructuredLog -Path $vmLog -Level Warning -Stage $stage -VMName $vmName `
-                -Message 'Pending updates detected; running forced DISM/SFC deep repair before patching.' -Data @{
-                    pendingUpdates = [int]$prePatchConvergence.PendingUpdates
-                }
-            Invoke-WithRetry -Operation {
-                Copy-PatchScriptToGuest -VM $vm -GuestCredential $workerGuestCredential `
-                    -Source $using:guestRepairScript -Destination $guestRepairScriptPath
-            } -OperationName 'Refresh guest repair script' -MaxAttempts ([int]$workerSettings.retry.maxAttempts) `
-                -InitialDelaySeconds ([int]$workerSettings.retry.initialDelaySeconds) -OnRetry $logRetry
-            if (-not [bool]$workerSettings.autoRebootWhenRequired) {
-                throw "Pending updates require deep repair but autoRebootWhenRequired is disabled for '$vmName'."
-            }
-            $stage = 'Reboot'
-            $reboots++
+        elseif ($comAvailableBeforeRepair -and ([int]$prePatchConvergence.PendingUpdates -gt 0 -or `
+            -not [string]::IsNullOrWhiteSpace($prePatchConvergence.SearchError))) {
             Write-StructuredLog -Path $vmLog -Level Information -Stage $stage -VMName $vmName `
-                -Message 'Rebooting guest before DISM/SFC deep repair to clear servicing registry state.'
-            Restart-PatchVMGuest -VM $vm -Server $viServer -GuestCredential $workerGuestCredential `
-                -TimeoutSeconds ([int]$workerSettings.timeouts.rebootSeconds) `
-                -PollSeconds ([int]$workerSettings.pollIntervalSeconds) `
-                -PostRebootWarmUpSeconds ([Math]::Max($postRebootWarmUpSeconds, 180))
-            $repairResult = Invoke-WithRetry -Operation {
-                Invoke-GuestWindowsUpdateRepair -VM $vm -GuestCredential $workerGuestCredential `
-                    -GuestScriptPath $guestRepairScriptPath -GuestWorkingDirectory $guestDirectory `
-                    -LocalDirectory $localVMDirectory -Server $server -VCenterCredential $workerVCenterCredential `
-                    -IgnoreInvalidCertificate ([bool]$workerSettings.ignoreInvalidCertificate) `
-                    -WebOperationTimeoutSeconds ([int]$workerSettings.timeouts.webOperationSeconds) `
-                    -TimeoutSeconds ([int]$workerSettings.timeouts.repairCycleSeconds) `
-                    -PollSeconds ([int]$workerSettings.pollIntervalSeconds) -DeepRepair:$true -ForceDeepRepair:$true
-            } -OperationName 'Forced deep repair Windows Update Agent' -MaxAttempts ([int]$workerSettings.retry.maxAttempts) `
-                -InitialDelaySeconds ([int]$workerSettings.retry.initialDelaySeconds) -OnRetry $logRetry
-            if ($null -ne $repairResult.dismExitCode) {
-                $deepRepairAttempted = $true
-            }
-            $servicingRepairAttempts = 0
-            while ($null -eq $repairResult.dismExitCode -and [string]$repairResult.status -eq 'RebootRequired' `
-                -and $servicingRepairAttempts -lt 3) {
-                $servicingRepairAttempts++
-                $stage = 'Reboot'
-                $reboots++
-                Write-StructuredLog -Path $vmLog -Level Warning -Stage $stage -VMName $vmName `
-                    -Message 'Retrying DISM/SFC deep repair after servicing registry reboot.' -Data @{
-                        attempt = $servicingRepairAttempts
-                    }
-                Restart-PatchVMGuest -VM $vm -Server $viServer -GuestCredential $workerGuestCredential `
-                    -TimeoutSeconds ([int]$workerSettings.timeouts.rebootSeconds) `
-                    -PollSeconds ([int]$workerSettings.pollIntervalSeconds) `
-                    -PostRebootWarmUpSeconds ([Math]::Max($postRebootWarmUpSeconds, 180))
-                Invoke-WithRetry -Operation {
-                    Copy-PatchScriptToGuest -VM $vm -GuestCredential $workerGuestCredential `
-                        -Source $using:guestRepairScript -Destination $guestRepairScriptPath
-                } -OperationName 'Refresh guest repair script' -MaxAttempts ([int]$workerSettings.retry.maxAttempts) `
-                    -InitialDelaySeconds ([int]$workerSettings.retry.initialDelaySeconds) -OnRetry $logRetry
-                $repairResult = Invoke-WithRetry -Operation {
-                    Invoke-GuestWindowsUpdateRepair -VM $vm -GuestCredential $workerGuestCredential `
-                        -GuestScriptPath $guestRepairScriptPath -GuestWorkingDirectory $guestDirectory `
-                        -LocalDirectory $localVMDirectory -Server $server -VCenterCredential $workerVCenterCredential `
-                        -IgnoreInvalidCertificate ([bool]$workerSettings.ignoreInvalidCertificate) `
-                        -WebOperationTimeoutSeconds ([int]$workerSettings.timeouts.webOperationSeconds) `
-                        -TimeoutSeconds ([int]$workerSettings.timeouts.repairCycleSeconds) `
-                        -PollSeconds ([int]$workerSettings.pollIntervalSeconds) -DeepRepair:$true -ForceDeepRepair:$true
-                } -OperationName 'Forced deep repair Windows Update Agent' -MaxAttempts ([int]$workerSettings.retry.maxAttempts) `
-                    -InitialDelaySeconds ([int]$workerSettings.retry.initialDelaySeconds) -OnRetry $logRetry
-                if ($null -ne $repairResult.dismExitCode) {
-                    $deepRepairAttempted = $true
+                -Message 'Healthy Windows Update COM; skipping agent repair and proceeding to patch cycles.' -Data @{
+                    pendingUpdates = [int]$prePatchConvergence.PendingUpdates
+                    searchError = [string]$prePatchConvergence.SearchError
                 }
+            $repairResult = [pscustomobject]@{
+                status = 'Ready'
+                comAvailable = $true
+                deepRepairApplied = $false
+                rebootRequired = $false
             }
         }
         else {
@@ -324,6 +386,7 @@ $workerResults = @($inventory | ForEach-Object -ThrottleLimit ([int]$settings.th
                 -PollSeconds ([int]$workerSettings.pollIntervalSeconds) `
                 -PostRebootWarmUpSeconds ([int]$workerSettings.postRebootWarmUpSeconds)
         }
+        }
 
         $postRebootWarmUpSeconds = [int]$workerSettings.postRebootWarmUpSeconds
         $maxRebootOnlyCycles = [int]$workerSettings.maxRebootOnlyCycles
@@ -343,6 +406,8 @@ $workerResults = @($inventory | ForEach-Object -ThrottleLimit ([int]$settings.th
             return $convergence
         }
 
+        $wuNetworkRepairAttempted = $false
+        if (-not $skipOnlinePatchCycles) {
         for ($cycle = 1; $cycle -le [int]$workerSettings.maxPatchCycles; $cycle++) {
             $cycles = $cycle
             $stage = 'PatchCycle'
@@ -392,6 +457,18 @@ $workerResults = @($inventory | ForEach-Object -ThrottleLimit ([int]$settings.th
                         -PollSeconds ([int]$workerSettings.pollIntervalSeconds) `
                         -PostRebootWarmUpSeconds ([int]$workerSettings.postRebootWarmUpSeconds)
                     $reboots++
+                    continue
+                }
+                $isWuSyncFailure = ($guestError + ' ' + $guestErrorId) -match '(?i)8024402C|WU_E_PT_NO_SYNC'
+                if ($isWuSyncFailure -and -not $wuNetworkRepairAttempted) {
+                    $wuNetworkRepairAttempted = $true
+                    Write-StructuredLog -Path $vmLog -Level Warning -Stage $stage -VMName $vmName `
+                        -Message 'Windows Update sync failed; repairing guest IPv4 routing/DNS and retrying patch cycle.' -Data @{
+                            error = $guestError
+                        }
+                    Repair-GuestIPv4Networking -VM $vm -GuestCredential $workerGuestCredential -ExpectedIPv4 $inventoryIp | Out-Null
+                    Reset-GuestWindowsUpdateConnectivity -VM $vm -GuestCredential $workerGuestCredential -ExpectedIPv4 $inventoryIp | Out-Null
+                    $cycle--
                     continue
                 }
                 throw "Guest patch cycle failed: $guestError"
@@ -512,8 +589,9 @@ $workerResults = @($inventory | ForEach-Object -ThrottleLimit ([int]$settings.th
                 }
             }
         }
+        }
 
-        if (-not $completedConvergence) {
+        if (-not $completedConvergence -and -not $skipOnlinePatchCycles) {
             $convergence = & $testConvergence 'Final convergence verification after patch cycles.'
             if ($convergence.IsCompliant) {
                 $status = 'Compliant'
@@ -550,9 +628,8 @@ $workerResults = @($inventory | ForEach-Object -ThrottleLimit ([int]$settings.th
             -Data @{ type = $errorType; fullyQualifiedErrorId = $_.FullyQualifiedErrorId }
     }
     finally {
-        if ($connected) {
-            try { Disconnect-VIServer -Server $viServer -Force -Confirm:$false -ErrorAction SilentlyContinue | Out-Null } catch { }
-        }
+        # Do not Disconnect-VIServer here: parallel workers share one PowerCLI process and
+        # disconnecting one vCenter session breaks other in-flight workers on the same host.
     }
 
     $ended = [DateTime]::UtcNow
