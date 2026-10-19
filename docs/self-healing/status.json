@@ -1,11 +1,11 @@
 {
- "generated_at": "2026-10-19T04:17:45.451523+00:00",
+ "generated_at": "2026-10-19T04:59:42.731570+00:00",
  "report": {
   "execution_id": "EXEC-2026-10-05-001",
   "filename": "EXEC-2026-10-05-001.xlsx",
   "url": "downloads/EXEC-2026-10-05-001.xlsx",
-  "size_bytes": 573142,
-  "updated_at": "2026-10-19T04:38:45.171583+00:00",
+  "size_bytes": 573143,
+  "updated_at": "2026-10-19T05:17:07.494814+00:00",
   "sheets": [
    "Summary",
    "Fleet Status",
@@ -31,8 +31,8 @@
   "execution_id": "EXEC-2026-10-05-001",
   "filename": "EXEC-2026-10-05-001.xlsx",
   "url": "downloads/EXEC-2026-10-05-001.xlsx",
-  "size_bytes": 573142,
-  "updated_at": "2026-10-19T04:38:45.171583+00:00",
+  "size_bytes": 573143,
+  "updated_at": "2026-10-19T05:17:07.494814+00:00",
   "sheets": [
    "Summary",
    "Fleet Status",
@@ -4617,7 +4617,7 @@
   "mode": "PRODUCTION",
   "start_time": "2026-10-05T07:49:25.641863+00:00",
   "end_time": null,
-  "elapsed_seconds": 1196899,
+  "elapsed_seconds": 1199417,
   "eta_seconds": null,
   "source": "linux_servers_full_agent_status-2026-10-05.csv"
  },
@@ -4667,20 +4667,6 @@
    "vcenter_ip_match": true,
    "summary": "vCenter: VM found (https://stc-vsphere-01.strykercorp.com); power=POWERED_ON. | vCenter: VMware Tools status=toolsOk \u2014 guest IP may be stale.",
    "detail": "vCenter: VM found (https://stc-vsphere-01.strykercorp.com); power=POWERED_ON.\nvCenter: VMware Tools status=toolsOk \u2014 guest IP may be stale.\nNetwork: TCP connection refused \u2014 sshd not listening on tried ports (22/2222/22022) or host firewall.\nProfile: likely network appliance \u2014 confirm SSH management port (often 22, not 22022) and whether full agent stack applies."
-  },
-  {
-   "hostname": "engage.engage",
-   "tanium_ip": "172.20.2.3",
-   "ssh_status": "SSH_FAILED",
-   "transport_class": "no_route",
-   "vcenter_configured": true,
-   "vcenter_vm_found": true,
-   "vcenter_power": "POWERED_ON",
-   "vcenter_guest_ips": [],
-   "vcenter_guest_primary": "",
-   "vcenter_ip_match": false,
-   "summary": "vCenter: VM found (https://stc-vsphere-01.strykercorp.com); power=POWERED_ON. | vCenter verified: VM is on but no guest IPv4 reported (VMware Tools not running or guest has no IP).",
-   "detail": "vCenter: VM found (https://stc-vsphere-01.strykercorp.com); power=POWERED_ON.\nvCenter verified: VM is on but no guest IPv4 reported (VMware Tools not running or guest has no IP).\nNetwork: orchestrator has no route to 172.20.2.3 (isolated/lab subnet or missing firewall rule).\nProfile: lab/isolated 172.20.x \u2014 confirm VM is on a reachable network from this orchestrator (vCenter guest IP)."
   },
   {
    "hostname": "agni.vcraeng.com",
@@ -4851,6 +4837,22 @@
    "vcenter_ip_match": true,
    "summary": "vCenter: VM found (https://blr-vsphere-01.strykercorp.com); power=POWERED_ON. | vCenter: VMware Tools status=toolsOk \u2014 guest IP may be stale.",
    "detail": "vCenter: VM found (https://blr-vsphere-01.strykercorp.com); power=POWERED_ON.\nvCenter: VMware Tools status=toolsOk \u2014 guest IP may be stale.\nSSH detail: vCenter: VM found (https://blr-vsphere-01.strykercorp.com); power=POWERED_ON. | vCenter: VMware Tools status=toolsOk \u2014 guest IP may be stale. | SSH attempts: 10.90.120.92:22 (vcenter_guest): all 10 credential set(s) were tried; kex_exchange_identification: Connection closed by re\u2026"
+  },
+  {
+   "hostname": "engage.engage",
+   "tanium_ip": "172.20.2.3",
+   "ssh_status": "SSH_FAILED",
+   "transport_class": "wrong_tanium_ip",
+   "vcenter_configured": true,
+   "vcenter_vm_found": true,
+   "vcenter_power": "POWERED_ON",
+   "vcenter_guest_ips": [
+    "10.22.36.243"
+   ],
+   "vcenter_guest_primary": "10.22.36.243",
+   "vcenter_ip_match": false,
+   "summary": "vCenter: VM found (https://stc-vsphere-01.strykercorp.com); power=POWERED_ON. | vCenter verified: Tanium IP 172.20.2.3 \u2260 guest IP 10.22.36.243 (all guest IPs: 10.22.36.243). Orchestrator should retry SSH on guest IP when vCenter enrichment is enabled.",
+   "detail": "vCenter: VM found (https://stc-vsphere-01.strykercorp.com); power=POWERED_ON.\nvCenter verified: Tanium IP 172.20.2.3 \u2260 guest IP 10.22.36.243 (all guest IPs: 10.22.36.243). Orchestrator should retry SSH on guest IP when vCenter enrichment is enabled."
   }
  ],
  "hosts": {
